@@ -1,23 +1,21 @@
+# the folloing code is adapted from velovi
+from typing import Optional
 
-from pathlib import Path
-from typing import Optional, Union
-from urllib.request import urlretrieve
-
-import torch
 import numpy as np
 import pandas as pd
 import scvelo as scv
 from anndata import AnnData
 from sklearn.preprocessing import MinMaxScaler
-from scipy.spatial.distance import cdist
+
 
 def preprocess_data(
-    adata : AnnData,
-    spliced_layer : Optional[str] = "Ms",
-    unspliced_layer : Optional[str] = "Mu",
-    ) -> AnnData:
-    """
-    Preprocess data.
+    adata: AnnData,
+    spliced_layer: Optional[str] = "Ms",
+    unspliced_layer: Optional[str] = "Mu",
+    min_max_scale: bool = True,
+    filter_on_r2: bool = True,
+) -> AnnData:
+    """Preprocess data.
 
     This function removes poorly detected genes and minmax scales the data.
 
@@ -38,12 +36,21 @@ def preprocess_data(
     -------
     Preprocessed adata.
     """
-    scaler = MinMaxScaler()
-    adata.layers[spliced_layer] = scaler.fit_transform(adata.layers[spliced_layer])
+    if min_max_scale:
+        scaler = MinMaxScaler()
+        adata.layers[spliced_layer] = scaler.fit_transform(adata.layers[spliced_layer])
 
-    scaler = MinMaxScaler()
-    adata.layers[unspliced_layer] = scaler.fit_transform(
-        adata.layers[unspliced_layer]
-    )
+        scaler = MinMaxScaler()
+        adata.layers[unspliced_layer] = scaler.fit_transform(
+            adata.layers[unspliced_layer]
+        )
+
+    if filter_on_r2:
+        scv.tl.velocity(adata, mode="deterministic")
+
+        adata = adata[
+            :, np.logical_and(adata.var.velocity_r2 > 0, adata.var.velocity_gamma > 0)
+        ].copy()
+        adata = adata[:, adata.var.velocity_genes].copy()
 
     return adata
