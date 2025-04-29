@@ -2,15 +2,14 @@
 
 ```
 
-Welcome to the RegVelo documentation.
+# Welcome to the RegVelo documentation.
 
 ```{toctree}
-:hidden: true
-:maxdepth: 1
+:maxdepth: 3
+:titlesonly: true
 
-api/index
 about/index
-tutorials.md
+tutorials/index
+api/index
 release_notes/index
 references
-```
