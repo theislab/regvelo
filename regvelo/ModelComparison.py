@@ -84,7 +84,7 @@ class ModelComparison:
         # 1.Validate adata
         if not isinstance(adata, AnnData):
             raise TypeError(f"Expected AnnData object, got {type(adata).__name__}")
-        layers = ['Ms', 'Mu', 'fit_t']
+        layers = ['Ms', 'Mu']
         for layer in layers:
             if layer not in adata.layers:
                 raise ValueError(f"Missing required layer: {layer}")
