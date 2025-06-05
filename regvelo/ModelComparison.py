@@ -143,7 +143,8 @@ class ModelComparison:
         adata: AnnData,
         model_list: List[str],
         lam2: Union[List[float], float] = None,
-        n_repeat: int = 1
+        n_repeat: int = 1,
+        batch_size=None
     ) -> List:
         """Train all the possible models given by users, and stored them in a dictionary, where users can reach them easily and deal with them in batch.If there are already model trained and saved before, they won't be removed.
         
@@ -155,6 +156,8 @@ class ModelComparison:
             The list of valid model type, including 'Soft', 'Hard', 'Soft_regularized'
         lam2
             Normalization factor used under 'soft_regularized' mode. A float or a list of float number in range of (0,1)
+        batch_size
+            Training batch size. This enable user to adjust batch size according to data size.
             
         Returns
         ----------
@@ -185,7 +188,7 @@ class ModelComparison:
                                 regulators=TF,
                                 lam2 = lambda2
                             )
-                            vae.train()
+                            vae.train(batch_size=batch_size)
                             self.MODEL_TRAINED[f"{model}\nlam2:{lambda2}_{nrun}"] = vae
                     else:
                         vae = REGVELOVI(
@@ -194,7 +197,7 @@ class ModelComparison:
                             regulators=TF,
                             lam2=lam2
                         )
-                        vae.train()
+                        vae.train(batch_size=batch_size)
                         self.MODEL_TRAINED[f"{model}_{nrun}"] = vae
                 else:
                     vae = REGVELOVI(
@@ -203,7 +206,7 @@ class ModelComparison:
                         regulators=TF,
                         soft_constraint=(model == 'soft')
                     )
-                    vae.train()
+                    vae.train(batch_size=batch_size)
                     self.MODEL_TRAINED[f"{model}_{nrun}"] = vae
 
         return list(self.MODEL_TRAINED.keys())
