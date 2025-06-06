@@ -344,6 +344,7 @@ class ModelComparison:
         y_ticks = ax.get_yticks()
         model_positions = dict(zip(model_order, y_ticks))
         
+        base_line = 1
         for target_model in model_order:
             if target_model == ref_model:
                 continue
@@ -363,9 +364,11 @@ class ModelComparison:
                 continue
 
             if p_value < 0.05:
+                base_line += 0.05
                 significance = self.get_significance(p_value)
                 self._draw_significance_marker(
                     ax=ax,
+                    base_line=base_line,
                     start=model_positions[ref_model],
                     end=model_positions[target_model],
                     significance=significance,
@@ -400,17 +403,18 @@ class ModelComparison:
     def _draw_significance_marker(
             self,
             ax,
+            base_line,
             start,
             end,
             significance,
             bracket_height=0.05,
             linewidth=1.2,
-            text_offset=0.05):
+            text_offset=0.03):
         
         if start > end:
             start, end = end, start
         x_max = ax.get_xlim()[1]
-        bracket_level = max(start, end) + bracket_height
+        bracket_level = base_line + bracket_height
         
         ax.plot(
             [bracket_level-0.02, bracket_level, bracket_level, bracket_level-0.02],
