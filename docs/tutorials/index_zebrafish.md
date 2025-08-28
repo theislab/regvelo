@@ -5,5 +5,6 @@
 :titlesonly:
 
 zebrafish/tutorial
+zebrafish/grn_tutorial
 ```
 

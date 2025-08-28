@@ -1,7 +1,7 @@
 import numpy as np
-
 from anndata import AnnData
-from typing import Any
+
+from .._model import REGVELOVI
 
 
 # Code mostly taken from veloVI reproducibility repo
@@ -10,22 +10,22 @@ from typing import Any
 
 def set_output(
     adata: AnnData, 
-    vae: Any, 
+    vae: REGVELOVI, 
     n_samples: int = 30, 
     batch_size: int = None
     ) -> None:
-    r"""Add inference results to adata.
+    r"""Add inference results from a trained RegVelo model to ``adata``.
 
     Parameters
     ----------
     adata
         Annotated data matrix.
     vae
-        RegVelo model
+        Trained :class:`REGVELOVI` model.
     n_samples
         Number of posterior samples to use for estimation.
     batch_size
-        Minibatch size for data loading into model. If None, uses `scvi.settings.batch_size`.
+        Minibatch size for data loading into model. If None, uses ``scvi.settings.batch_size``.
 
     Returns
     -------
