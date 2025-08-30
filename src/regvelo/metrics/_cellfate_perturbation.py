@@ -7,8 +7,9 @@ from ._abundance_test import abundance_test
 def cellfate_perturbation(
         perturbed : dict[str, AnnData],
         baseline : AnnData,
-        terminal_state : str | Sequence[str],
-        method : Literal["likelihood", "t-statistics"] = "likelihood"
+        terminal_state : str | Sequence[str] | None = None,
+        terminal_indices : dict[str, list[str]] | None = None,
+        method : Literal["likelihood", "t-statistics"] = "likelihood",
         ) -> pd.DataFrame:
     r"""Compute depletion likelihood or score for TF perturbation.
 
@@ -22,6 +23,8 @@ def cellfate_perturbation(
         under :attr:`obsm["lineages_fwd"]`.
     terminal_state
         One or more terminal states for which depletion scores are computed.
+    terminal_indices
+        Dictionary mapping each terminal state to the list of cell indices (obs_names) belonging to it.
     method
         Scoring method to use:
 
@@ -33,11 +36,24 @@ def cellfate_perturbation(
     DataFrame summarizing depletion scores and significance statistics.
     """
 
-    if "lineages_fwd" not in baseline.obsm:
+    if "lineages_fwd" not in baseline.obsm and terminal_indices is None:
         raise KeyError("Lineages not found in baseline.obsm. Please compute lineages first.")
-
+    
     if isinstance(terminal_state, str):
         terminal_state = [terminal_state]
+        
+    if terminal_indices is not None:
+        vk = cr.kernels.VelocityKernel(baseline).compute_transition_matrix()
+        estimator = cr.estimators.GPCCA(vk)
+        estimator.set_terminal_states(terminal_indices)
+        estimator.compute_fate_probabilities(solver='direct')
+
+        for adata_p in perturbed.values():
+            vk_p = cr.kernels.VelocityKernel(adata_p).compute_transition_matrix()
+            estimator_p = cr.estimators.GPCCA(vk_p)
+            estimator_p.set_terminal_states(terminal_indices)
+            estimator_p.compute_fate_probabilities(solver='direct')
+        terminal_state = list(terminal_indices.keys())
 
     fate_prob_perturb = {}
     for TF, adata_target_perturb in perturbed.items():
