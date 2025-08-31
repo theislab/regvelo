@@ -1,6 +1,6 @@
 import torch
 from anndata import AnnData
-
+from typing import Union
 from .._model import REGVELOVI
 
 def in_silico_block_simulation(
