@@ -6,7 +6,7 @@ from .._model import REGVELOVI
 def in_silico_block_simulation(
         model: str,
         adata: AnnData,
-        TF: str,
+        TF: Union[str, list[str]],
         effects: float = 0,
         cutoff: float = 1e-3,
         customized_GRN: torch.Tensor = None,
@@ -22,7 +22,7 @@ def in_silico_block_simulation(
     adata
         Annotated data matrix.
     TF
-        Transcription factor to be knocked out (its regulon will be silenced).
+        Transcription factor(s) to be knocked out (their regulons will be silenced).
     effect
         Coefficient used to replace weights in GRN
     cutoff
@@ -38,13 +38,22 @@ def in_silico_block_simulation(
     - Perturbed annotated data object with RegVelo outputs.
     - RegVelo model with modified GRN.
     """
-
+    # Ensure TF is a list for consistent processing
+    if isinstance(TF, str):
+        TF = [TF]
+        
     reg_vae_perturb = REGVELOVI.load(model,adata)
 
     perturb_GRN = reg_vae_perturb.module.v_encoder.fc1.weight.detach().clone()
 
     if customized_GRN is None:
-        perturb_GRN[(perturb_GRN[:,[i == TF for i in adata.var.index]].abs()>cutoff).cpu().numpy().reshape(-1),[i == TF for i in adata.var.index]] = effects
+        for tf in TF:
+            # Boolean mask for the current TF
+            tf_mask = [i == tf for i in adata.var.index]
+            # Row mask: absolute values above cutoff for this TF
+            row_mask = (perturb_GRN[:, tf_mask].abs() > cutoff).cpu().numpy().reshape(-1)
+            # Assign the single effect value
+            perturb_GRN[row_mask, tf_mask] = effects
         reg_vae_perturb.module.v_encoder.fc1.weight.data = perturb_GRN
     else:
         device = perturb_GRN.device

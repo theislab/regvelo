@@ -10,6 +10,7 @@ def cellfate_perturbation(
         terminal_state : str | Sequence[str] | None = None,
         terminal_indices : dict[str, list[str]] | None = None,
         method : Literal["likelihood", "t-statistics"] = "likelihood",
+        solver: Union[str, Literal["direct", "gmres", "lgmres", "bicgstab", "gcrotmk"]] = "gmres",
         ) -> pd.DataFrame:
     r"""Compute depletion likelihood or score for TF perturbation.
 
@@ -30,6 +31,15 @@ def cellfate_perturbation(
 
         - "t-statistics": uses t-statistics.
         - "likelihood": uses ROC AUC score.
+    solver
+        Linear system solver used by CellRank’s GPCCA estimator when computing fate probabilities.
+        Supported options include:
+        - `"direct"`: direct solver.
+        - `"gmres"`: Generalized Minimal Residual method (default).
+        - `"lgmres"`: Loose GMRES.
+        - `"bicgstab"`: BiConjugate Gradient Stabilized method.
+        - `"gcrotmk"`: GCROTMK solver.
+        Choice of solver may affect performance and numerical stability.
 
     Returns
     -------
@@ -46,13 +56,13 @@ def cellfate_perturbation(
         vk = cr.kernels.VelocityKernel(baseline).compute_transition_matrix()
         estimator = cr.estimators.GPCCA(vk)
         estimator.set_terminal_states(terminal_indices)
-        estimator.compute_fate_probabilities(solver='direct')
+        estimator.compute_fate_probabilities(solver=solver)
 
         for adata_p in perturbed.values():
             vk_p = cr.kernels.VelocityKernel(adata_p).compute_transition_matrix()
             estimator_p = cr.estimators.GPCCA(vk_p)
             estimator_p.set_terminal_states(terminal_indices)
-            estimator_p.compute_fate_probabilities(solver='direct')
+            estimator_p.compute_fate_probabilities(solver=solver)
         terminal_state = list(terminal_indices.keys())
 
     fate_prob_perturb = {}
