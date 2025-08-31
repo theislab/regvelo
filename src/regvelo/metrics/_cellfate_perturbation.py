@@ -28,7 +28,6 @@ def cellfate_perturbation(
         Dictionary mapping each terminal state to the list of cell indices (obs_names) belonging to it.
     method
         Scoring method to use:
-
         - "t-statistics": uses t-statistics.
         - "likelihood": uses ROC AUC score.
     solver
