@@ -1,6 +1,6 @@
 import torch
+from typing import Union
 from anndata import AnnData
-
 from .._model import REGVELOVI
 
 def in_silico_block_simulation(
@@ -23,7 +23,7 @@ def in_silico_block_simulation(
         Annotated data matrix.
     TF
         Transcription factor(s) to be knocked out (their regulons will be silenced).
-    effect
+    effects
         Coefficient used to replace weights in GRN
     cutoff
         Threshold to determine which links in the GRN are considered active and should be muted.
