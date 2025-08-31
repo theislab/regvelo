@@ -1,6 +1,8 @@
 import pandas as pd
+import cellrank as cr
+
 from anndata import AnnData
-from typing import Sequence, Literal
+from typing import Sequence, Literal, Union
 
 from ._abundance_test import abundance_test
 
