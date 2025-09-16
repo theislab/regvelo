@@ -209,6 +209,17 @@ class ModelComparison:
 
         return list(self.MODEL_TRAINED.keys())
     
+    def model_save(self, filepath='model_dict.pth'):
+        torch.save(self.MODEL_TRAINED, filepath)
+        print(f"Save successfully to filepath: {filepath}")
+    def model_load(self, filepath):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model_dict = torch.load(filepath, map_location = device)
+        if isinstance(model_dict, dict):
+            self.MODEL_TRAINED = model_dict
+        else:
+            print(f"ModelComparison.model_load can only load dict of model saved from ModelComparison.model_save")
+    
     def evaluate(
         self,
         side_information: str,
@@ -246,6 +257,37 @@ class ModelComparison:
         df = pd.DataFrame(correlations)
         setattr(self, df_name, df)
         return df_name, df
+    
+    def result_save(self, side_information, filepath=None):
+        from pathlib import Path
+        data = getattr(self, f"df_{side_information}")
+        if filepath is None:
+            filepath = f"{side_information}.csv"
+        
+        Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+        data.to_csv(filepath, index=False)
+        print(f"Save successfully to filepath: {filepath}")
+    def result_load(self, filepath):
+        from pathlib import Path
+        path = Path(filepath)
+        filename_stem = path.stem
+        
+        if filename_stem not in self.side_info_dict.keys():
+            print(f"ModelComparison.result_load can only load csv file saved by ModelComparison.result_save.")
+            return False
+        
+        try:
+            data = pd.read_csv(filepath)
+            setattr(self, f"df_{filename_stem}", data)
+            print(f"Load successfully: df_{filename_stem}")
+            return True
+            
+        except FileNotFoundError:
+            print(f"Error: {filepath} not exist")
+            return False
+        except Exception as e:
+            print(f"Error: fail to read file - {str(e)}")
+            return False
     
     def calculate(
         self,
