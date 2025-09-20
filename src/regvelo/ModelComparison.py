@@ -34,6 +34,7 @@ class ModelComparison:
         
         """
     def __init__(self,
+                 adata: AnnData,
                  terminal_states: list = None,
                  state_transition: dict = None,
                  n_states: int = None):
@@ -41,6 +42,8 @@ class ModelComparison:
         
         Parameters
         ----------
+        adata
+            The annotated data matrix. After input of adata, the object will store it as self variable.
         terminal_states
             A list records all terminal states among all cell types. 
             This parameter is not necessary if you don't use TSI as side_information. Please make sure they are consistent with information stored in 'side_key' under TSI mode.
@@ -56,6 +59,7 @@ class ModelComparison:
         An comparision object. You can deal with more operations as follows.
 
         """
+        self.ADATA = adata
         self.TERMINAL_STATES = terminal_states
         self.STATE_TRANSITION = state_transition
         self.N_STATES = n_states
@@ -138,8 +142,8 @@ class ModelComparison:
     
     def train(
         self,
-        adata: AnnData,
         model_list: list[str],
+        adata: AnnData = None,
         lam2: list[float] | float = None,
         n_repeat: int = 1,
         batch_size=None
@@ -162,8 +166,9 @@ class ModelComparison:
         A dictionary key names, represent to all models trained in this step. 
         
         """
-        self.validate_input(adata, model_list = model_list, lam2 = lam2)
-        self.ADATA = adata
+        if adata is not None:
+            self.validate_input(adata, model_list = model_list, lam2 = lam2)
+            self.ADATA = adata
         
         if not isinstance(n_repeat, int) or n_repeat < 1:
             raise ValueError("n_repeat must be a positive integer")
@@ -209,10 +214,10 @@ class ModelComparison:
 
         return list(self.MODEL_TRAINED.keys())
     
-    def model_save(self, filepath='model_dict.pth'):
+    def model_save(self, pthfilepath='model_dict.pth'):
         from pathlib import Path
         import cloudpickle
-        path = Path(filepath)
+        path = Path(pthfilepath)
         path.parent.mkdir(parents=True, exist_ok=True)
         
         try:
@@ -221,10 +226,10 @@ class ModelComparison:
             print(f"Save successfully to: {path.absolute()}")
         except Exception as e:
             print(f"Save failed: {e}")
-    def model_load(self, filepath):
+    def model_load(self, pthfilepath):
         from pathlib import Path
         import cloudpickle
-        path = Path(filepath)
+        path = Path(pthfilepath)
         if not path.exists():
             raise FileNotFoundError(f"Model file not found: {path}")
         try:
