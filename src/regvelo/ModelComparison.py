@@ -210,15 +210,32 @@ class ModelComparison:
         return list(self.MODEL_TRAINED.keys())
     
     def model_save(self, filepath='model_dict.pth'):
-        torch.save(self.MODEL_TRAINED, filepath)
-        print(f"Save successfully to filepath: {filepath}")
+        from pathlib import Path
+        import cloudpickle
+        path = Path(filepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            with open(path, 'wb') as f:
+                cloudpickle.dump(self.MODEL_TRAINED, f)
+            print(f"Save successfully to: {path.absolute()}")
+        except Exception as e:
+            print(f"Save failed: {e}")
     def model_load(self, filepath):
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        model_dict = torch.load(filepath, map_location = device)
-        if isinstance(model_dict, dict):
-            self.MODEL_TRAINED = model_dict
-        else:
-            print(f"ModelComparison.model_load can only load dict of model saved from ModelComparison.model_save")
+        from pathlib import Path
+        import cloudpickle
+        path = Path(filepath)
+        if not path.exists():
+            raise FileNotFoundError(f"Model file not found: {path}")
+        try:
+            with open(path, 'rb') as f:
+                model_dict = cloudpickle.load(f)
+            if isinstance(model_dict, dict):
+                self.MODEL_TRAINED = model_dict
+            else:
+                raise ValueError("Invalid model format: expected dict")
+        except Exception as e:
+            print(f"Load failed: {e}")
     
     def evaluate(
         self,
@@ -258,22 +275,22 @@ class ModelComparison:
         setattr(self, df_name, df)
         return df_name, df
     
-    def result_save(self, side_information, filepath=None):
+    def result_save(self, side_information):
         from pathlib import Path
         data = getattr(self, f"df_{side_information}")
-        if filepath is None:
-            filepath = f"{side_information}.csv"
+        filepath = f"{side_information}.csv"
         
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
         data.to_csv(filepath, index=False)
         print(f"Save successfully to filepath: {filepath}")
-    def result_load(self, filepath):
+    def result_load(self, side_information):
         from pathlib import Path
+        filepath = f"{side_information}.csv"
         path = Path(filepath)
         filename_stem = path.stem
         
         if filename_stem not in self.side_info_dict.keys():
-            print(f"ModelComparison.result_load can only load csv file saved by ModelComparison.result_save.")
+            print(f"Available side information: {self.side_info_dict.keys()}")
             return False
         
         try:
