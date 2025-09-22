@@ -14,6 +14,8 @@ import scvi
 from ._model import REGVELOVI
 import scvelo as scv
 
+from pathlib import Path
+import cloudpickle
 
 from .tools._set_output import set_output
 from .metrics._tsi import get_tsi_score
@@ -216,31 +218,64 @@ class ModelComparison:
 
         return list(self.MODEL_TRAINED.keys())
     
-    def model_save(self, pthfilepath='model_dict.pth'):
-        from pathlib import Path
-        import cloudpickle
+    def model_save(self, pthfilepath: str = "model_dict.pth") -> None:
+        r"""Save the trained model to a given file path using `cloudpickle`.
+    
+        Parameters
+        ----------
+        pthfilepath : str, optional
+            The file path where the model will be saved. Defaults to 'model_dict.pth'.
+    
+        Returns
+        -------
+        None
+            The function saves the model to disk and prints the status.
+        """
         path = Path(pthfilepath)
         path.parent.mkdir(parents=True, exist_ok=True)
-        
+    
         try:
-            with open(path, 'wb') as f:
+            with open(path, "wb") as f:
                 cloudpickle.dump(self.MODEL_TRAINED, f)
             print(f"Save successfully to: {path.absolute()}")
         except Exception as e:
             print(f"Save failed: {e}")
-    def model_load(self, pthfilepath):
-        from pathlib import Path
-        import cloudpickle
-        path = Path(pthfilepath)
+            
+    def model_load(self, pthfilepath: str) -> None:
+        r"""Load a trained model from a given file path using `cloudpickle`.
+    
+        Parameters
+        ----------
+        pthfilepath : str
+            The file path from which the model will be loaded.
+    
+        Raises
+        ------
+        FileNotFoundError
+            If the specified file does not exist.
+        ValueError
+            If the loaded object is not a dictionary.
+        Exception
+            For other unexpected errors during loading.
+    
+        Returns
+        -------
+        None
+            The function assigns the loaded model dictionary to `self.MODEL_TRAINED`.
+        """
+        path: Path = Path(pthfilepath)
         if not path.exists():
             raise FileNotFoundError(f"Model file not found: {path}")
+    
         try:
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 model_dict = cloudpickle.load(f)
+    
             if isinstance(model_dict, dict):
                 self.MODEL_TRAINED = model_dict
             else:
                 raise ValueError("Invalid model format: expected dict")
+    
         except Exception as e:
             print(f"Load failed: {e}")
     
@@ -282,30 +317,59 @@ class ModelComparison:
         setattr(self, df_name, df)
         return df_name, df
     
-    def result_save(self, side_information):
-        from pathlib import Path
-        data = getattr(self, f"df_{side_information}")
-        filepath = f"{side_information}.csv"
-        
+    def result_save(self, side_information: str) -> None:
+        r"""Save a DataFrame associated with the given side information to CSV.
+    
+        Parameters
+        ----------
+        side_information : str
+            The key identifying the DataFrame attribute of the instance,
+            expected to be stored as `self.df_<side_information>`.
+    
+        Returns
+        -------
+        None
+            The function saves the DataFrame to a CSV file named 
+            `<side_information>.csv` in the current directory.
+        """
+        data: pd.DataFrame = getattr(self, f"df_{side_information}")
+        filepath: str = f"{side_information}.csv"
+    
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
         data.to_csv(filepath, index=False)
         print(f"Save successfully to filepath: {filepath}")
-    def result_load(self, side_information):
-        from pathlib import Path
-        filepath = f"{side_information}.csv"
-        path = Path(filepath)
-        filename_stem = path.stem
-        
+    
+    
+    def result_load(self, side_information: str) -> bool:
+        r"""Load a CSV file into a DataFrame and assign it to the instance.
+    
+        Parameters
+        ----------
+        side_information : str
+            The key identifying the side information to be loaded. 
+            The CSV file must be named `<side_information>.csv`.
+    
+        Returns
+        -------
+        bool
+            True if the file is successfully loaded and assigned to 
+            `self.df_<side_information>`. False if the file does not exist,
+            the key is invalid, or another error occurs.
+        """
+        filepath: str = f"{side_information}.csv"
+        path: Path = Path(filepath)
+        filename_stem: str = path.stem
+    
         if filename_stem not in self.side_info_dict.keys():
             print(f"Available side information: {self.side_info_dict.keys()}")
             return False
-        
+    
         try:
-            data = pd.read_csv(filepath)
+            data: pd.DataFrame = pd.read_csv(filepath)
             setattr(self, f"df_{filename_stem}", data)
             print(f"Load successfully: df_{filename_stem}")
             return True
-            
+    
         except FileNotFoundError:
             print(f"Error: {filepath} not exist")
             return False
