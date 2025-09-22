@@ -169,6 +169,8 @@ class ModelComparison:
         if adata is not None:
             self.validate_input(adata, model_list = model_list, lam2 = lam2)
             self.ADATA = adata
+        else:
+            adata = self.ADATA
         
         if not isinstance(n_repeat, int) or n_repeat < 1:
             raise ValueError("n_repeat must be a positive integer")
