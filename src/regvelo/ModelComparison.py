@@ -14,6 +14,8 @@ import scvi
 from ._model import REGVELOVI
 import scvelo as scv
 
+from pathlib import Path
+import cloudpickle
 
 from .tools._set_output import set_output
 from .metrics._tsi import get_tsi_score
@@ -34,6 +36,7 @@ class ModelComparison:
         
         """
     def __init__(self,
+                 adata: AnnData,
                  terminal_states: list = None,
                  state_transition: dict = None,
                  n_states: int = None):
@@ -41,6 +44,8 @@ class ModelComparison:
         
         Parameters
         ----------
+        adata
+            The annotated data matrix. After input of adata, the object will store it as self variable.
         terminal_states
             A list records all terminal states among all cell types. 
             This parameter is not necessary if you don't use TSI as side_information. Please make sure they are consistent with information stored in 'side_key' under TSI mode.
@@ -56,6 +61,7 @@ class ModelComparison:
         An comparision object. You can deal with more operations as follows.
 
         """
+        self.ADATA = adata
         self.TERMINAL_STATES = terminal_states
         self.STATE_TRANSITION = state_transition
         self.N_STATES = n_states
@@ -138,8 +144,8 @@ class ModelComparison:
     
     def train(
         self,
-        adata: AnnData,
         model_list: list[str],
+        adata: AnnData = None,
         lam2: list[float] | float = None,
         n_repeat: int = 1,
         batch_size=None
@@ -162,8 +168,11 @@ class ModelComparison:
         A dictionary key names, represent to all models trained in this step. 
         
         """
-        self.validate_input(adata, model_list = model_list, lam2 = lam2)
-        self.ADATA = adata
+        if adata is not None:
+            self.validate_input(adata, model_list = model_list, lam2 = lam2)
+            self.ADATA = adata
+        else:
+            adata = self.ADATA
         
         if not isinstance(n_repeat, int) or n_repeat < 1:
             raise ValueError("n_repeat must be a positive integer")
@@ -209,6 +218,67 @@ class ModelComparison:
 
         return list(self.MODEL_TRAINED.keys())
     
+    def model_save(self, pthfilepath: str = "model_dict.pth") -> None:
+        r"""Save the trained model to a given file path using `cloudpickle`.
+    
+        Parameters
+        ----------
+        pthfilepath : str, optional
+            The file path where the model will be saved. Defaults to 'model_dict.pth'.
+    
+        Returns
+        -------
+        None
+            The function saves the model to disk and prints the status.
+        """
+        path = Path(pthfilepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
+    
+        try:
+            with open(path, "wb") as f:
+                cloudpickle.dump(self.MODEL_TRAINED, f)
+            print(f"Save successfully to: {path.absolute()}")
+        except Exception as e:
+            print(f"Save failed: {e}")
+            
+    def model_load(self, pthfilepath: str) -> None:
+        r"""Load a trained model from a given file path using `cloudpickle`.
+    
+        Parameters
+        ----------
+        pthfilepath : str
+            The file path from which the model will be loaded.
+    
+        Raises
+        ------
+        FileNotFoundError
+            If the specified file does not exist.
+        ValueError
+            If the loaded object is not a dictionary.
+        Exception
+            For other unexpected errors during loading.
+    
+        Returns
+        -------
+        None
+            The function assigns the loaded model dictionary to `self.MODEL_TRAINED`.
+        """
+        path: Path = Path(pthfilepath)
+        if not path.exists():
+            raise FileNotFoundError(f"Model file not found: {path}")
+    
+        try:
+            with open(path, "rb") as f:
+                model_dict = cloudpickle.load(f)
+    
+            if isinstance(model_dict, dict):
+                self.MODEL_TRAINED = model_dict
+            else:
+                raise ValueError("Invalid model format: expected dict")
+    
+        except Exception as e:
+            print(f"Load failed: {e}")
+    
     def evaluate(
         self,
         side_information: str,
@@ -246,6 +316,66 @@ class ModelComparison:
         df = pd.DataFrame(correlations)
         setattr(self, df_name, df)
         return df_name, df
+    
+    def result_save(self, side_information: str) -> None:
+        r"""Save a DataFrame associated with the given side information to CSV.
+    
+        Parameters
+        ----------
+        side_information : str
+            The key identifying the DataFrame attribute of the instance,
+            expected to be stored as `self.df_<side_information>`.
+    
+        Returns
+        -------
+        None
+            The function saves the DataFrame to a CSV file named 
+            `<side_information>.csv` in the current directory.
+        """
+        data: pd.DataFrame = getattr(self, f"df_{side_information}")
+        filepath: str = f"{side_information}.csv"
+    
+        Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+        data.to_csv(filepath, index=False)
+        print(f"Save successfully to filepath: {filepath}")
+    
+    
+    def result_load(self, side_information: str) -> bool:
+        r"""Load a CSV file into a DataFrame and assign it to the instance.
+    
+        Parameters
+        ----------
+        side_information : str
+            The key identifying the side information to be loaded. 
+            The CSV file must be named `<side_information>.csv`.
+    
+        Returns
+        -------
+        bool
+            True if the file is successfully loaded and assigned to 
+            `self.df_<side_information>`. False if the file does not exist,
+            the key is invalid, or another error occurs.
+        """
+        filepath: str = f"{side_information}.csv"
+        path: Path = Path(filepath)
+        filename_stem: str = path.stem
+    
+        if filename_stem not in self.side_info_dict.keys():
+            print(f"Available side information: {self.side_info_dict.keys()}")
+            return False
+    
+        try:
+            data: pd.DataFrame = pd.read_csv(filepath)
+            setattr(self, f"df_{filename_stem}", data)
+            print(f"Load successfully: df_{filename_stem}")
+            return True
+    
+        except FileNotFoundError:
+            print(f"Error: {filepath} not exist")
+            return False
+        except Exception as e:
+            print(f"Error: fail to read file - {str(e)}")
+            return False
     
     def calculate(
         self,
