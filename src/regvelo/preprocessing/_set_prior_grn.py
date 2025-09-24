@@ -7,7 +7,8 @@ from scipy.spatial.distance import cdist
 def set_prior_grn(
         adata: AnnData, 
         gt_net: pd.DataFrame, 
-        keep_dim: bool = False
+        keep_dim: bool = False,
+        cor_filter: bool = True,
         ) -> AnnData:
     r"""Add a prior gene regulatory network (GRN) to an AnnData object.
 
@@ -22,6 +23,9 @@ def set_prior_grn(
     keep_dim
         If True, output AnnData retains its original dimensions. Default is False.
         If False, prune genes without incoming or outgoing regulatory edges.
+    cor_filter
+        If True, filter regulatory edges by correlation with expression data before 
+        storing in the AnnData object. Default is True.
 
     Returns
     -------
@@ -45,14 +49,17 @@ def set_prior_grn(
         gt_net = skeleton.copy()
 
     # Compute correlation matrix based on gene expression layer "Ms"
-    gex = adata.layers["Ms"]
-    correlation = 1 - cdist(gex.T, gex.T, metric="correlation")
-    correlation = correlation[np.ix_(target_mask, regulator_mask)]
-    correlation[np.isnan(correlation)] = 0
-
-    # Align and combine ground-truth GRN with expression correlation
     filtered_gt = gt_net.loc[targets, regulators]
-    grn = filtered_gt * correlation
+    if cor_filter:
+        gex = adata.layers["Ms"]
+        correlation = 1 - cdist(gex.T, gex.T, metric="correlation")
+        correlation = correlation[np.ix_(target_mask, regulator_mask)]
+        correlation[np.isnan(correlation)] = 0
+
+        # Align and combine ground-truth GRN with expression correlation
+        grn = filtered_gt * correlation
+    else:
+        grn = filtered_gt
 
     # Binarize the GRN
     grn = (np.abs(grn) >= 0.01).astype(int)
