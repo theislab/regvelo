@@ -20,6 +20,7 @@ def TFscreening(
     TF_list: str | list[str] | dict[str, list[str]] | pd.Series = None,
     cluster_label : str | None = None,
     terminal_states : str | list[str] | dict[str, list[str]] | pd.Series = None,
+    terminal_states_manual: dict = None,
     KO_list : str | list[str] | dict[str, list[str]] | pd.Series = None,
     n_states : int | list[int] = 8,
     cutoff : float = 1e-3,
@@ -98,7 +99,7 @@ def TFscreening(
         logg.info("inferring perturbation...")
         while True:
             try:
-                perturb_screening = TFScanning_func(model, adata, cluster_label, terminal_states, KO_list, n_states, cutoff, method)
+                perturb_screening = TFScanning_func(model, adata, cluster_label, terminal_states, terminal_states_manual, KO_list, n_states, cutoff, method)
                 
                 coef = pd.DataFrame(np.array(perturb_screening['coefficient']))
                 coef.index = perturb_screening['TF']
@@ -145,4 +146,3 @@ def TFscreening(
     pval = pd.concat(pert_p).groupby(level=0).mean()
 
     return coef, pval
-
