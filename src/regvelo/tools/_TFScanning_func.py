@@ -16,6 +16,7 @@ def TFScanning_func(
     adata: AnnData, 
     cluster_label: str = None,
     terminal_states: str | list[str] | dict[str, list[str]] | pd.Series = None,
+    terminal_states_manual: dict = None,
     KO_list: str | list[str] | dict[str, list[str]] | pd.Series = None,
     n_states: int | list[int] = None,
     cutoff: float | list[float] = 1e-3,
@@ -34,6 +35,8 @@ def TFScanning_func(
         Key in ``adata.obs`` to associate names and colors with ``terminal_states``.
     terminal_states
         Subset of ``macrostates``.
+    terminal_states_manual
+        Dictionary of manually defined terminal states.
     KO_list
         List of TF names or combinations (e.g., ["geneA", "geneB_geneC"]).
     n_states
@@ -61,38 +64,43 @@ def TFScanning_func(
     ck = cr.kernels.ConnectivityKernel(adata).compute_transition_matrix()
     
     if combined_kernel:
-        g2 = cr.estimators.GPCCA(0.8 * vk + 0.2 * ck)
+        g = cr.estimators.GPCCA(0.8 * vk + 0.2 * ck)
     else:
-        g2 = cr.estimators.GPCCA(vk)
+        g = cr.estimators.GPCCA(vk)
 
     ## evaluate the fate prob on original space
-    g2.compute_macrostates(n_states=n_states, n_cells = 30, cluster_key=cluster_label)
+    g.compute_macrostates(n_states=n_states, n_cells = 30, cluster_key=cluster_label)
     # set a high number of states, and merge some of them and rename
-    if terminal_states is None:
-        g2.predict_terminal_states()
-        terminal_states = g2.terminal_states.cat.categories.tolist()
-    g2.set_terminal_states(
-        terminal_states
-    )        
-    g2.compute_fate_probabilities(solver="direct")
-    fate_prob = g2.fate_probabilities
-    sampleID = adata.obs.index.tolist()
-    fate_name = fate_prob.names.tolist()
-    fate_prob = pd.DataFrame(fate_prob,index= sampleID,columns=fate_name)
+
+    if terminal_states_manual is None:
+        if terminal_states is None:
+            g.predict_terminal_states()
+            terminal_states = g.terminal_states.cat.categories.tolist()
+        
+        g.set_terminal_states(
+            terminal_states
+        )
+    else:
+        g.set_terminal_states(
+            terminal_states_manual
+        )       
+    g.compute_fate_probabilities(solver="direct")
+    fate_prob = g.fate_probabilities
+    fate_prob = pd.DataFrame(
+        g.fate_probabilities,
+        index=adata.obs.index.tolist(),
+        columns=g.fate_probabilities.names.tolist(),
+    )
     fate_prob_original = fate_prob.copy()
 
     ## create dictionary
-    terminal_id = terminal_states.copy()
-    terminal_type = terminal_states.copy()
-    for i in terminal_states:
-        for j in [1,2,3,4,5,6,7,8,9,10]:
-            terminal_id.append(i+"_"+str(j))
-            terminal_type.append(i)
-    terminal_dict = dict(zip(terminal_id, terminal_type))
-    n_states = len(g2.macrostates.cat.categories.tolist())
+    ct_indices = {
+        ct: adata.obs["term_states_fwd"][adata.obs["term_states_fwd"] == ct].index.tolist()
+        for ct in terminal_states
+    }
     
-    coef = []
-    pvalue = []
+    coef, pvalue = [], []
+    
     for tf in split_elements(KO_list):
         perturb_GRN = raw_GRN.clone()
         vec = perturb_GRN[:,[i in tf for i in adata.var.index.tolist()]].clone()
@@ -103,45 +111,30 @@ def TFScanning_func(
             
         adata_target = reg_vae_perturb.add_regvelo_outputs_to_adata(adata = adata)
         ## perturb the regulations
-        vk = cr.kernels.VelocityKernel(adata_target)
-        vk.compute_transition_matrix()
+        vk = cr.kernels.VelocityKernel(adata_target).compute_transition_matrix()
         ck = cr.kernels.ConnectivityKernel(adata_target).compute_transition_matrix()
-        
         if combined_kernel:
             g2 = cr.estimators.GPCCA(0.8 * vk + 0.2 * ck)
         else:
             g2 = cr.estimators.GPCCA(vk)
-        ## evaluate the fate prob on original space
-        n_states_perturb = n_states
-        while True:
-            try:
-                # Perform some computation in f(a)
-                g2.compute_macrostates(n_states=n_states_perturb, n_cells = 30, cluster_key=cluster_label)
-                break
-            except:
-                # If an error is raised, increment a and try again, and need to recompute double knock-out reults
-                n_states_perturb += 1
-                vk = cr.kernels.VelocityKernel(adata)
-                vk.compute_transition_matrix()
-                ck = cr.kernels.ConnectivityKernel(adata).compute_transition_matrix()
-                if combined_kernel:
-                    g = cr.estimators.GPCCA(0.8 * vk + 0.2 * ck)
-                else:
-                    g = cr.estimators.GPCCA(vk)
-                ## evaluate the fate prob on original space
-                g.compute_macrostates(n_states=n_states_perturb, n_cells = 30,cluster_key=cluster_label)
-                ## set a high number of states, and merge some of them and rename
-                if terminal_states is None:
-                    g.predict_terminal_states()
-                    terminal_states = g.terminal_states.cat.categories.tolist()
-                g.set_terminal_states(
-                    terminal_states
-                )
-                g.compute_fate_probabilities(solver="direct")
-                fate_prob = g.fate_probabilities
-                sampleID = adata.obs.index.tolist()
-                fate_name = fate_prob.names.tolist()
-                fate_prob = pd.DataFrame(fate_prob,index= sampleID,columns=fate_name)
+
+        g2.set_terminal_states(ct_indices)
+        g2.compute_fate_probabilities()
+        fb = pd.DataFrame(
+            g2.fate_probabilities,
+            index=adata.obs.index.tolist(),
+            columns=g2.fate_probabilities.names.tolist(),
+        )
+
+        # Align to original terminal states
+        fate_prob2 = pd.DataFrame(columns=terminal_states, index=adata.obs.index.tolist())
+        for i in terminal_states:
+            fate_prob2.loc[:, i] = fb.loc[:, i]
+        fate_prob2 = fate_prob2.fillna(0)
+
+        arr = np.array(fate_prob2.sum(0))
+        arr[arr != 0] = 1
+        fate_prob = fate_prob * arr
                 
         ## intersection the states
         terminal_states_perturb = g2.macrostates.cat.categories.tolist()
@@ -165,11 +158,12 @@ def TFScanning_func(
         arr[arr!=0] = 1
         fate_prob = fate_prob * arr
         
-        y = [0] * fate_prob.shape[0] + [1] * fate_prob2.shape[0]
+        # Abundance test
         fate_prob2.index = [i + "_perturb" for i in fate_prob2.index]
         test_result = abundance_test(fate_prob, fate_prob2, method)
         coef.append(test_result.loc[:, "coefficient"])
-        pvalue.append(test_result.loc[:, "FDR adjusted p-value"]) 
+        pvalue.append(test_result.loc[:, "FDR adjusted p-value"])
+
         logg.info("Done "+ combine_elements([tf])[0])
         fate_prob = fate_prob_original.copy()
 
