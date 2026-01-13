@@ -135,28 +135,6 @@ def TFScanning_func(
         arr = np.array(fate_prob2.sum(0))
         arr[arr != 0] = 1
         fate_prob = fate_prob * arr
-                
-        ## intersection the states
-        terminal_states_perturb = g2.macrostates.cat.categories.tolist()
-        terminal_states_perturb = list(set(terminal_states_perturb).intersection(terminal_states))
-        
-        g2.set_terminal_states(
-            terminal_states_perturb
-        )
-        g2.compute_fate_probabilities(solver="direct")
-        fb = g2.fate_probabilities
-        sampleID = adata.obs.index.tolist()
-        fate_name = fb.names.tolist()
-        fb = pd.DataFrame(fb,index= sampleID,columns=fate_name)
-        fate_prob2 = pd.DataFrame(columns= terminal_states, index=sampleID)   
-        
-        for i in terminal_states_perturb:
-            fate_prob2.loc[:,i] = fb.loc[:,i]
-
-        fate_prob2 = fate_prob2.fillna(0)
-        arr = np.array(fate_prob2.sum(0))
-        arr[arr!=0] = 1
-        fate_prob = fate_prob * arr
         
         # Abundance test
         fate_prob2.index = [i + "_perturb" for i in fate_prob2.index]
