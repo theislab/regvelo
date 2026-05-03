@@ -65,31 +65,31 @@ def zebrafish_grn(file_path: str | Path = "data/zebrafish_nc/prior_GRN.csv") -> 
     return grn
 
 def zebrafish_perturb(file_path: str | Path = "data/zebrafish_nc/perturbseq_all.h5ad") -> AnnData:                          
-      r"""Load zebrafish neural crest Perturb-seq dataset.                      
-                                                                                
-      This dataset contains single-cell CRISPR screening (Perturb-seq) data from zebrafish neural crest (NC) cells, comprising 12,393 cells and 27,599 genes across 9 pooled samples. Cells were perturbed with sgRNAs targeting 22 transcription factors — including ETS-family members (*fli1a*, *elk3*, *erf*, *etv2*, *ets1*, *elf1*), pigment regulators (*mitfa*, *tfec*, *tfeb*), and additional NC regulators (*nr2f2*, *nr2f5*, *rarga*, *rxraa*, *smarcc1a*, *ebf3a*) — as well as combinatorial double or triple knockouts. Unperturbed control and negative-control cells are also included.
-                                                                                
-      Cell type annotations span the major stages of NC development:
-                                                                                
-      - Neural plate border (NPB) progenitors (``NPB_hox``, ``NPB_nohox``),     
-      - Migratory NC cells across axial levels (``mNC_arch1``, ``mNC_arch2``, ``mNC_head_mesenchymal``, ``mNC_hox34``, ``mNC_nohox``, ``mNC_trunk``, ``mNC_vagal``),                                                         
-      - Differentiating NC cells (``dNC_hox34``, ``dNC_nohox``),                
-      - Pigment cell lineages (``Pigment``, ``Pigment_1``, ``Pigment_gch2_high``), and                                                   
-      - Mutant populations (``Mutant``, ``Mutant_hox23``).
-                                                                                
-      The object includes PCA, PHATE, and t-SNE embeddings, as well as imputed latent time and terminal state assignments.                               
-                                                                                
-      Parameters  
-      ----------                                                                
-      file_path   
-          Path to local dataset. Will download from remote URL if not found.
-                                                                                
-      Returns
-      -------                                                                   
-      Annotated data object of zebrafish NC Perturb-seq cells.
-      """                                                                       
-      adata = read(file_path, backup_url=url_perturb, sparse=True, cache=True)
-      return adata
+    r"""Load zebrafish neural crest Perturb-seq dataset.                      
+                                                                            
+    This dataset contains single-cell CRISPR screening (Perturb-seq) data from zebrafish neural crest (NC) cells, comprising 12,393 cells and 27,599 genes across 9 pooled samples. Cells were perturbed with sgRNAs targeting 22 transcription factors — including ETS-family members (*fli1a*, *elk3*, *erf*, *etv2*, *ets1*, *elf1*), pigment regulators (*mitfa*, *tfec*, *tfeb*), and additional NC regulators (*nr2f2*, *nr2f5*, *rarga*, *rxraa*, *smarcc1a*, *ebf3a*) — as well as combinatorial double or triple knockouts. Unperturbed control and negative-control cells are also included.
+                                                                            
+    Cell type annotations span the major stages of NC development:
+                                                                            
+    - Neural plate border (NPB) progenitors (``NPB_hox``, ``NPB_nohox``),     
+    - Migratory NC cells across axial levels (``mNC_arch1``, ``mNC_arch2``, ``mNC_head_mesenchymal``, ``mNC_hox34``, ``mNC_nohox``, ``mNC_trunk``, ``mNC_vagal``),                                                         
+    - Differentiating NC cells (``dNC_hox34``, ``dNC_nohox``),                
+    - Pigment cell lineages (``Pigment``, ``Pigment_1``, ``Pigment_gch2_high``), and                                                   
+    - Mutant populations (``Mutant``, ``Mutant_hox23``).
+                                                                            
+    The object includes PCA, PHATE, and t-SNE embeddings, as well as imputed latent time and terminal state assignments.                               
+                                                                            
+    Parameters  
+    ----------                                                                
+    file_path   
+        Path to local dataset. Will download from remote URL if not found.
+                                                                            
+    Returns
+    -------                                                                   
+    Annotated data object of zebrafish NC Perturb-seq cells.
+    """                                                                       
+    adata = read(file_path, backup_url=url_perturb, sparse=True, cache=True)
+    return adata
 
 def murine_nc(data_type: Literal["preprocessed", "normalized", "velocyto"] = "preprocessed") -> AnnData:
     r"""Load mouse neural crest single-cell RNA-seq dataset (subset of Qiu et al.).
