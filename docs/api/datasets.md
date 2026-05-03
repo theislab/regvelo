@@ -11,6 +11,7 @@
 
     zebrafish_nc
     zebrafish_grn
+    zebrafish_perturb
     murine_nc
     human_limb
     hindbrain
