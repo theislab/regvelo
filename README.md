@@ -43,13 +43,13 @@ There are several options to intall regvelo:
 If you find RegVelo useful for your research, please consider citing our work as:
 
 ```
-  @article{wang2024regvelo,
-    title={RegVelo: gene-regulatory-informed dynamics of single cells},
-    author={Wang, Weixu and Hu, Zhiyuan and Weiler, Philipp and Mayes, Sarah and Lange, Marius and Wang, Jingye and Xue, Zhengyuan and Sauka-Spengler, Tatjana and Theis, Fabian J},
-    journal={bioRxiv},
-    pages={2024--12},
-    year={2024},
-    publisher={Cold Spring Harbor Laboratory}
-  }
+  @article{wang2026regvelo,
+      title={RegVelo: gene-regulatory-informed dynamics of single cells},
+      author={Wang, Weixu and Hu, Zhiyuan and Weiler, Philipp and Mayes, Sarah and Lange, Marius and Wang, Jingye and Xue, Zhengyuan and Sauka-Spengler, Tatjana and Theis, Fabian J},
+      journal={Cell},
+      year={2026},
+      publisher={Elsevier},
+      doi={10.1016/j.cell.2026.04.022}
+    }
 ```
 
