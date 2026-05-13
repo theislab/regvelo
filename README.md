@@ -3,7 +3,7 @@
 <img src="https://github.com/theislab/regvelo/blob/main/docs/_static/img/overview_fig.png?raw=true" alt="RegVelo" width="600" />
 
 **RegVelo** is an end-to-end framework to infer regulatory cellular dynamics through coupled splicing dynamics. 
-See our [RegVelo manuscript](https://www.biorxiv.org/content/10.1101/2024.12.11.627935v1) and [documentation](https://regvelo.readthedocs.io/en/latest/index.html) to learn more. 
+See our [RegVelo manuscript](https://www.cell.com/cell/fulltext/S0092-8674(26)00457-5) and [documentation](https://regvelo.readthedocs.io/en/latest/index.html) to learn more. 
 
 Feel free to open an [issue](https://github.com/theislab/regvelo/issues/new) if you encounter a bug, need our help or just want to make a comment/suggestion.
 
