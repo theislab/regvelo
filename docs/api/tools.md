@@ -14,6 +14,7 @@
    tools.in_silico_block_regulation_simulation
    tools.TFScanning_func
    tools.TFscreening
+   tools.TFscreening_wrapper
    tools.markov_density_simulation
    tools.simulated_visit_diff
    tools.regulation_scanning
