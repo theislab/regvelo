@@ -1,148 +1,237 @@
-import torch
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+ 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import mplscience
+ 
+from typing import Sequence
 from anndata import AnnData
 from scvelo import logging as logg
-import os, shutil
+ 
+import cellrank as cr
+import regvelo as rgv
 
-from .._model import REGVELOVI
-from ._utils import get_list_name
-from ._TFScanning_func import TFScanning_func
-
+from ...plotting._markov_screen import _visits_diff_per_tf
+from ...plotting._markov_screen import _plot_visits_dist
+from ...plotting._markov_screen import _plot_visits_dist_combined
 
 def TFscreening(
-    adata: AnnData, 
-    prior_graph: torch.Tensor,
-    lam: int = 1,
-    lam2: int = 0,
-    soft_constraint: bool = True,
-    TF_list: str | list[str] | dict[str, list[str]] | pd.Series = None,
-    cluster_label : str | None = None,
-    terminal_states : str | list[str] | dict[str, list[str]] | pd.Series = None,
-    terminal_states_manual: dict = None,
-    KO_list : str | list[str] | dict[str, list[str]] | pd.Series = None,
-    n_states : int | list[int] = 8,
-    cutoff : float = 1e-3,
-    max_nruns : float = 5,
-    method : str = "likelihood",
-    dir : str | None = None,
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    r"""Perform repeated in silico TF regulon knock-out screening.
-
+    adata: AnnData,
+    adata_perturb_dict: dict[str, AnnData],
+    TERMINAL_STATES: list[str],
+    STARTING_POINTS: list[str],
+    tf_ko_list: list[str] | None,
+    cluster_key: str,
+    method: str = "stepwise",
+    n_step_to_use: int = 500,
+) -> tuple[pd.DataFrame, AnnData]:
+    
+    r"""Run Markov simulations to score TF perturbation effects on cell fate density.
+ 
+    For each TF, simulates random walks from :attr:`STARTING_POINTS` to
+    :attr:`TERMINAL_STATES` in both the baseline and perturbed transition
+    matrices, computes a density difference (dd) score and its significance, then
+    collects per-cell visit statistics. After all TFs are processed, produces
+    summary CSVs and a combined significance-filtered boxplot.
+ 
     Parameters
     ----------
     adata
-        Annotated data matrix.
-    prior_graph
-        A prior graph for RegVelo inference.
-    lam
-        Regularization parameter for controling the strengths of adding prior knowledge.
-    lam2
-        Regularization parameter for controling the strengths of L1 regularization to the Jacobian matrix.
-    soft_constraint
-        Apply soft constraint mode RegVelo.
-    TF_list
-        The TF list used for RegVelo inference.
-    cluster_label
-        Key in `adata.obs` to associate names and colors with :attr:`terminal_states`.
-    terminal_states
-        subset of :attr:`macrostates`.
-    KO_list
-        List of TF names or combinations (e.g., ["geneA", "geneB_geneC"]).
-    n_states
-        Number of macrostates to compute.
-    cutoff
-        Threshold to zero out TF-target links during knock-out.
-    max_nruns
-        Maximum number of runs, soft constrainted RegVelo model need to have repeat runs to get stable perturbation results.
-        Set to 1 if ``soft_constraint=False``.
+        Baseline AnnData with velocity outputs and terminal state annotations in ``adata.obs['term_states_fwd']``.
+    adata_perturb_dict
+        Perturbed AnnData objects keyed by TF name, as returned by ``tf_perturbation``.
+    TERMINAL_STATES
+        Terminal state labels used to define absorption boundaries for the Markov simulation.
+    STARTING_POINTS
+        Cell-type labels (from ``adata.obs[cluster_key]``) used to seed random walks.
+    tf_ko_list
+        TFs to simulate. If None, all TFs in ``adata.var['TF']`` are used.
+    cluster_key
+        `.obs` column name for cell-type annotation, used to identify starting cells.
     method
-        Method to quantify perturbation effects
-    dir
-        Directory to store intermediate model files and results.
-
+        Markov simulation method passed to :func:`rgv.tl.markov_density_simulation`, either ``'stepwise'`` or ``'one-step'``.
+    n_step_to_use
+        Number of steps for the Markov random walk.
+ 
     Returns
     -------
-    
-    - DataFrame containing the coefficients of the perturbation effects.
-    - DataFrame containing the p-values of the perturbation effects.
+ 
+    - DataFrame of per-TF density difference scores, significance values, and baseline/perturbed absorption rates.
+    - AnnData used for the simulation.
+ 
+    Saves
+    -----
+ 
+    - ``markov_dd_score_by_TF.csv``: per-TF density difference scores and significance per terminal state.
+    - ``markov_visits_by_TF.csv``: per-cell visit counts, densities, and differences for each TF.
+    - ``markov_simulation_barplot_{terminal_state}.svg``: combined significance-filtered boxplot per terminal state.
     """
-
-    if soft_constraint is not True:
-        max_nruns = 1
-    
-    if dir is None:
-        dir = os.getcwd()
-    
-    # Ensure the output directory exists
-    output_dir = os.path.join(dir, "perturb_repeat_runs")
-    os.makedirs(output_dir, exist_ok=True)
-
-    for nrun in range(max_nruns):
-        logg.info("training model...")
-        REGVELOVI.setup_anndata(adata, spliced_layer="Ms", unspliced_layer="Mu")
-        reg_vae = REGVELOVI(adata, W=prior_graph, regulators=TF_list, soft_constraint=soft_constraint, lam=lam, lam2=lam2)
-        reg_vae.train()
-        
-        logg.info("save model...")
-        model_name = f"rgv_model_{nrun}"
-        coef_name = f"coef_{nrun}.csv"
-        pval_name = f"pval_{nrun}.csv"
-        
-        model = os.path.join(output_dir, model_name)
-        coef_save = os.path.join(output_dir, coef_name)
-        pval_save = os.path.join(output_dir, pval_name)
-        
-        reg_vae.save(model)
-
-        logg.info("inferring perturbation...")
-        while True:
-            try:
-                perturb_screening = TFScanning_func(model, adata, cluster_label, terminal_states, terminal_states_manual, KO_list, n_states, cutoff, method)
-                
-                coef = pd.DataFrame(np.array(perturb_screening['coefficient']))
-                coef.index = perturb_screening['TF']
-                coef.columns = get_list_name(perturb_screening['coefficient'][0])
-
-                pval = pd.DataFrame(np.array(perturb_screening['pvalue']))
-                pval.index = perturb_screening['TF']
-                pval.columns = get_list_name(perturb_screening['pvalue'][0])
-
-                # Handle NaN rows
-                rows_with_nan = coef.isna().any(axis=1)
-                coef.loc[rows_with_nan, :] = np.nan
-                pval.loc[rows_with_nan, :] = np.nan
-
-                coef.to_csv(coef_save)
-                pval.to_csv(pval_save)
-
-                break
-            except Exception as e:
-                # Catch the exception and retry training
-                print(f"Perturbation screening encountered an error: {e}, retraining model...")
-                shutil.rmtree(model, ignore_errors=True)
-                REGVELOVI.setup_anndata(adata, spliced_layer="Ms", unspliced_layer="Mu")
-                reg_vae = REGVELOVI(adata, W=prior_graph, regulators=TF_list, soft_constraint=soft_constraint, lam=lam, lam2=lam2)
-                reg_vae.train()
-
-                logg.info("save model...")
-                reg_vae.save(model)
-
-    # Read all repeat run results
-    pert_coef = []
-    pert_p = []
-    for filename in os.listdir(output_dir):
-        file_path = os.path.join(output_dir, filename)
-        if filename.startswith("coef_") and filename.endswith(".csv"):
-            df = pd.read_csv(file_path, index_col=0)
-            pert_coef.append(df)
-        elif filename.startswith("pval_") and filename.endswith(".csv"):
-            df = pd.read_csv(file_path, index_col=0)
-            pert_p.append(df)
-    
-    # Combine DataFrames
-    coef = pd.concat(pert_coef).groupby(level=0).mean()
-    pval = pd.concat(pert_p).groupby(level=0).mean()
-
-    return coef, pval
+ 
+    # Compute baseline transition matrix
+    vk = cr.kernels.VelocityKernel(adata).compute_transition_matrix()
+    vkt = vk.transition_matrix.A
+ 
+    terminal_indices = np.where(adata.obs["term_states_fwd"].isin(TERMINAL_STATES))[0]
+    start_indices = np.where(adata.obs[cluster_key].isin(STARTING_POINTS))[0]
+ 
+    res_table = pd.DataFrame()
+    visits_table = pd.DataFrame()
+    visits_table["cell"] = adata.obs_names
+ 
+    if tf_ko_list:
+        TF_candidate = tf_ko_list
+    else:
+        TF_candidate = list(adata.var_names[adata.var["TF"]])
+ 
+    # Run Markov simulation for each TF
+    for TF in TF_candidate:
+        adata_perturb = adata_perturb_dict[TF].copy()
+        adata_perturb.obs[cluster_key] = adata.obs[cluster_key].copy()
+ 
+        vk_p = cr.kernels.VelocityKernel(adata_perturb).compute_transition_matrix()
+        vkt_p = vk_p.transition_matrix.A
+ 
+        total_simulations = rgv.tl.markov_density_simulation(
+            adata,
+            vkt,
+            start_indices,
+            terminal_indices,
+            TERMINAL_STATES,
+            method=method,
+            n_steps=n_step_to_use,
+        )
+ 
+        _ = rgv.tl.markov_density_simulation(
+            adata_perturb,
+            vkt_p,
+            start_indices,
+            terminal_indices,
+            TERMINAL_STATES,
+            method=method,
+            n_steps=n_step_to_use,
+        )
+ 
+        dd_score, dd_sig = rgv.tl.simulated_visit_diff(adata, adata_perturb, TERMINAL_STATES)
+ 
+        ctrl_rate = np.sum(adata.obs["visits_dens"][~np.isnan(adata.obs["visits_dens"])])
+        perturb_rate = np.sum(
+            adata_perturb.obs["visits_dens"][~np.isnan(adata_perturb.obs["visits_dens"])]
+        )
+ 
+        rgv.pl.simulated_visit_diff(
+            adata,
+            adata_perturb,
+            TERMINAL_STATES,
+            total_simulations,
+            title=f"Density difference {TF}",
+        )
+ 
+        df, palette_rel = _visits_diff_per_tf(
+            adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE
+        )
+ 
+        res_table.loc[TF, "ctrl_rate"] = ctrl_rate
+        res_table.loc[TF, "perturb_rate"] = perturb_rate
+ 
+        for i, state in enumerate(TERMINAL_STATES):
+            res_table.loc[TF, f"dd_score_{state}"] = dd_score[i]
+            res_table.loc[TF, f"dd_sig_{state}"] = dd_sig[i]
+ 
+        visits_table[f"visits_{TF}"] = adata.obs["visits"].values
+        visits_table[f"visits_dens_{TF}"] = adata.obs["visits_dens"].values
+        visits_table[f"visits_diff_{TF}"] = adata.obs["visits_diff"].values
+        visits_table[f"visits_diff_smooth_{TF}"] = adata.obs["visits_diff_smooth"].values
+        visits_table[f"visits_perturb_{TF}"] = adata_perturb.obs["visits"].values
+        visits_table[f"visits_perturb_dens_{TF}"] = adata_perturb.obs["visits_dens"].values
+ 
+        # Clean up per-TF obs columns before next iteration
+        for col in ["visits", "visits_dens", "visits_diff", "visits_diff_smooth"]:
+            del adata.obs[col]
+ 
+    res_table.to_csv("markov_dd_score_by_TF.csv", sep=",")
+    visits_table.to_csv("markov_visits_by_TF.csv", sep=",")
+ 
+    # Plot Markov results
+    res_table["delta_success_rate"] = (
+        res_table["perturb_rate"] / res_table["ctrl_rate"] - 1
+    )
+    res_sort = res_table.sort_values(by="delta_success_rate", ascending=True)  # noqa: F841
+ 
+    df_all = pd.DataFrame()
+ 
+    for TF in TF_candidate:
+        adata.obs["visits"] = visits_table[f"visits_{TF}"].values
+        adata.obs["visits_dens"] = visits_table[f"visits_dens_{TF}"].values
+        adata.obs["visits_diff"] = visits_table[f"visits_diff_{TF}"].values
+        adata.obs["visits_diff_smooth"] = visits_table[f"visits_diff_smooth_{TF}"].values
+ 
+        dd_sig_tf = np.array([
+            res_table.loc[TF, f"dd_sig_{state}"] for state in TERMINAL_STATES
+        ])
+ 
+        df, _ = _visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig_tf, SIGNIFICANCE_PALETTE)
+        df["Factor"] = TF
+ 
+        for state in TERMINAL_STATES:
+            sig = rgv.mt.get_significance(res_table.loc[TF, f"dd_sig_{state}"])
+            df.loc[df["Group"] == state, "significance"] = sig
+ 
+        df_all = pd.concat([df_all, df], ignore_index=True)
+ 
+        for col in ["visits", "visits_dens", "visits_diff", "visits_diff_smooth"]:
+            del adata.obs[col]
+ 
+    df_all.to_csv("markov_screen_perturbation_rate.csv")
+ 
+    # Make combined plot for all terminal_states if only testing individual TF
+    if len(TF_candidate) == 1:
+        TF = TF_candidate[0]
+        adata_perturb = adata_perturb_dict[TF].copy()
+        adata_perturb.obs[cluster_key] = adata.obs[cluster_key].copy()
+ 
+        vk_p = cr.kernels.VelocityKernel(adata_perturb).compute_transition_matrix()
+        vkt_p = vk_p.transition_matrix.A
+ 
+        total_simulations = rgv.tl.markov_density_simulation(adata,
+                                                     vkt,
+                                                     start_indices,
+                                                     terminal_indices,
+                                                     TERMINAL_STATES,
+                                                     method=method)
+ 
+        _ = rgv.tl.markov_density_simulation(adata_perturb,
+                                             vkt_p,
+                                             start_indices,
+                                             terminal_indices,
+                                             TERMINAL_STATES,
+                                             method=method)
+ 
+        dd_score, dd_sig = rgv.tl.simulated_visit_diff(adata, adata_perturb, TERMINAL_STATES)
+ 
+        rgv.pl.simulated_visit_diff(adata,
+                            adata_perturb,
+                            TERMINAL_STATES,
+                            total_simulations,
+                            title="Density difference (elf1)")
+ 
+        df, palette_rel = _visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE)
+        _plot_visits_dist(df, palette_rel, 0.5)
+ 
+        plt.savefig(f"{TF_candidate}_markov_density_change_barplot.svg", format="svg", bbox_inches="tight")
+        plt.close()
+ 
+    # Plot density likelihood for all factors per terminal state
+    else:
+        _plot_visits_dist_combined(
+            df_all,
+            TERMINAL_STATES,
+            SIGNIFICANCE_PALETTE,
+            tick_range=0.5,
+            candidate_list=TF_candidate,
+            sig_to_keep=["*", "**", "***"],
+        )
+ 
+    logg.info("markov simulation complete")
+ 
+    return res_table, adata
