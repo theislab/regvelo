@@ -10,15 +10,7 @@ import scvelo as scv
 import mplscience
 import regvelo as rgv
 
-# Significance-level -> colour mapping for annotated plots.
-
-SIGNIFICANCE_PALETTE = {
-    "n.s.": "#dedede",
-    "*": "#90BAAD",
-    "**": "#A1E5AB",
-    "***": "#ADF6B1",
-}
-
+from ._utils import SIGNIFICANCE_PALETTE
 
 def plot_top_TF(
     markov_res_df,
