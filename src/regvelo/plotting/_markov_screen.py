@@ -10,15 +10,7 @@ from anndata import AnnData
 import cellrank as cr
 import regvelo as rgv
 
-
-# Colour palette mapping statistical significance labels to hex colours
-SIGNIFICANCE_PALETTE = {
-    "n.s.": "#dedede",
-    "*":    "#90BAAD",
-    "**":   "#A1E5AB",
-    "***":  "#ADF6B1",
-}
-
+from ._utils import SIGNIFICANCE_PALETTE
 
 def _visits_diff_per_tf(
     adata: AnnData,
@@ -121,9 +113,8 @@ def _plot_visits_dist(
 def _plot_visits_dist_combined(
     df: pd.DataFrame,
     terminal_states: Sequence[str],
-    palette: dict,
-    tick_range: float,
     candidate_list: list[str],
+    tick_range: float,
     sig_to_keep: list[str],
 ) -> None:
     """
@@ -133,11 +124,9 @@ def _plot_visits_dist_combined(
     Parameters
     ----------
     df : pd.DataFrame
-        Long-form DataFrame with columns 'Value', 'Group', 'Factor', 'significance' retrieved as output from rgv.mt.cellfate_perturbation.
+        Long-form DataFrame with columns 'Value', 'Group', 'Factor', 'significance' retrieved as output from rgv.tl.TFscreening.
     terminal_states : sequence of str
         Terminal state labels; one plot is produced per state.
-    palette : dict
-        Significance palette mapping labels to hex colours.
     tick_range : float
         Half-width of the y-axis range, centred at 0.5.
     candidate_list : list of str
@@ -145,6 +134,8 @@ def _plot_visits_dist_combined(
     sig_to_keep : list of str
         Significance labels to display (e.g. ['*', '**', '***']).
     """
+    palette = SIGNIFICANCE_PALETTE
+
     df = df[df["Factor"].isin(candidate_list)].copy()
     df["Value"] = df["Value"].astype(float)
 
