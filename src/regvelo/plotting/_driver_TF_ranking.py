@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -88,7 +86,7 @@ def plot_top_TF(
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
         
-        plt.savefig(f"top_depletion_hits.svg", format="svg", bbox_inches="tight", dpi=300)
+        #plt.savefig(f"top_depletion_hits.svg", format="svg", bbox_inches="tight", dpi=300)
         plt.close()
 
     tf_hits = df["TF"]
@@ -121,7 +119,7 @@ def plot_top_TF(
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
 
-        plt.savefig(f"top_increase_hits.svg", format="svg", bbox_inches="tight")
+        #plt.savefig(f"top_increase_hits.svg", format="svg", bbox_inches="tight")
         plt.close()
 
     tf_hits = df["TF"]
@@ -137,15 +135,14 @@ def compute_TF_regulon(
     TERMINAL_STATES,
     threshold=0.4,
     n_states=7,
-    n_samples=50,
-    out_dir="perturb_screen_out",
+    n_samples=50
 ):
     """Scan each candidate TF's regulon (targets and regulators) and save scores.
 
     For every TF in ``TF``, extracts the inferred GRN weights from the trained
     model, identifies that TF's targets and regulators above ``threshold`` (by
-    absolute weight), runs ``rgv.tl.regulation_scanning`` for both edge sets, and
-    writes the per-edge coefficient tables to ``out_dir``.
+    absolute weight), and runs ``rgv.tl.regulation_scanning`` for both edge sets,
+    returning the per-edge coefficient tables keyed by TF.
 
     Parameters
     ----------
@@ -170,19 +167,14 @@ def compute_TF_regulon(
         Number of macrostates used by ``regulation_scanning``. Default ``7``.
     n_samples : int, optional
         Number of samples drawn per scan. Default ``50``.
-    out_dir : str, optional
-        Directory for the output CSVs (created if absent). Default
-        ``"perturb_screen_out"``.
 
-    Side effects
-    ------------
-    Writes two CSVs per TF into ``out_dir``:
-        - ``perturb_screen_coef_{TF}_{threshold}_targets.csv``
-        - ``perturb_screen_coef_{TF}_{threshold}_regulators.csv``
-    Each is indexed by edge ("links") with one column per terminal state.
+    Returns
+    ----------
+    coef_targets, coef_regulators: dict of str to DataFrame
+        Per-TF target and regulator coefficient tables, keyed by TF, to be
+        passed directly into :func:`plot_GRN_per_TF`.
+
     """
-    os.makedirs(out_dir, exist_ok=True)
-
     vae = rgv.REGVELOVI.load(rgv_model, adata)
 
     GRN = pd.DataFrame(
@@ -198,6 +190,8 @@ def compute_TF_regulon(
         warnings.simplefilter("ignore")
 
     TF_candidate = TF
+    coef_targets = {}
+    coef_regulators = {}
 
     for TF in TF_candidate:
         print(f'Candidate factor: {TF}')
@@ -224,9 +218,8 @@ def compute_TF_regulon(
             coef = pd.DataFrame(np.array(perturb_screening["coefficient"]))
             coef.index = perturb_screening["links"]
             coef.columns = list(perturb_screening["coefficient"][0].keys())
-            print('Saving targets file...')
-            coef.to_csv(f'perturb_screen_out/perturb_screen_coef_{TF}_{threshold}_targets.csv', sep=',')
-    
+            coef_targets[TF] = coef
+
         # Filter to top regulators only
         regulators = GRN.loc[TF,:][GRN.loc[TF,:].abs() > threshold]
         regulators = np.array(regulators.index.tolist())[np.array(regulators) != 0]
@@ -251,8 +244,9 @@ def compute_TF_regulon(
             coef = pd.DataFrame(np.array(perturb_screening_tf["coefficient"]))
             coef.index = perturb_screening_tf["links"]
             coef.columns = list(perturb_screening_tf["coefficient"][0].keys())
-            print('Saving regulators file...')
-            coef.to_csv(f'perturb_screen_out/perturb_screen_coef_{TF}_{threshold}_regulators.csv', sep=',')   
+            coef_regulators[TF] = coef
+
+    return coef_targets, coef_regulators
 
 
 def plot_grn_weight(
@@ -312,7 +306,8 @@ def plot_GRN_per_TF(
     TF_candidate,
     TERMINAL_STATES,
     terminal_state_to_plot,
-    threshold=0.4,
+    coef_targets,
+    coef_regulators,
     n_hits=10
 ):
     """Plot regulon scores, GRN, and weight UMAPs for one TF and terminal states.
@@ -337,15 +332,15 @@ def plot_GRN_per_TF(
         All terminal-state labels (kept for context / future looping).
     terminal_state_to_plot : str
         The single terminal state to rank edges for. Must match a
-        column name in the regulon-scan CSVs written by :func:`compute_TF_regulon`.
-    threshold : float, optional
-        Threshold used in the input CSV filenames (must match the value used in
-        :func:`compute_TF_regulon`). Default ``0.4``.
+        column name in ``coef_targets``/``coef_regulators``.
+    coef_targets, coef_regulators : dict of str to DataFrame
+        Per-TF target and regulator coefficient tables, as returned by
+        :func:`compute_TF_regulon`.
     n_hits : int, optional
         Number of top edges to show per plot. Default ``10``.
     """
 
-    def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, threshold, n_hits):
+    def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits):
         """Plot the top ``n_hits`` regulon edges for one terminal state.
 
         Parameters
@@ -358,10 +353,8 @@ def plot_GRN_per_TF(
             Gene-by-gene GRN (prior, inferred, or mixed) used to sign the edges in
             the network diagram.
         target_type : {"targets", "regulators"}
-            Whether to read the targets-of-TF or regulators-of-TF scan file and
-            which GRN orientation to use.
-        threshold : float
-            Threshold value embedded in the input CSV filename.
+            Whether to use the targets-of-TF or regulators-of-TF coefficient
+            table and which GRN orientation to use.
         n_hits : int
             Number of top edges to keep.
 
@@ -371,11 +364,7 @@ def plot_GRN_per_TF(
             The top-hit gene names (targets if ``target_type == "targets"``,
             else regulators).
         """
-        coef = pd.read_csv(
-            f"perturb_screen_out/perturb_screen_coef_{TF}_{threshold}_{target_type}.csv",
-            sep=",",
-        )
-        coef.index = coef["Unnamed: 0"]
+        coef = coef_targets[TF] if target_type == "targets" else coef_regulators[TF]
         state_coef = coef.sort_values(by=terminal_state_to_plot, ascending=False)[:n_hits][terminal_state_to_plot]
 
         df = pd.DataFrame({"Gene": state_coef.index.tolist(), "Score": np.array(state_coef)})
@@ -432,19 +421,19 @@ def plot_GRN_per_TF(
 
     for TF in TF_candidate:
         
-        top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", threshold, n_hits)
+        top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", n_hits)
         #plt.savefig(f"{TF}_top_targets_prior.svg", format="svg", bbox_inches="tight")
         #plt.close()
-        
-        top_hits_targets_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "targets", threshold, n_hits)
+
+        top_hits_targets_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "targets", n_hits)
         #plt.savefig(f"{TF}_top_targets_infer.svg", format="svg", bbox_inches="tight")
         #plt.close()
-        
-        top_hits_regulators_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "regulators", threshold, n_hits)
+
+        top_hits_regulators_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "regulators", n_hits)
         #plt.savefig(f"{TF}_top_regulators_prior.svg", format="svg", bbox_inches="tight")
         #plt.close()
-        
-        top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", threshold, n_hits)
+
+        top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", n_hits)
         #plt.savefig(f"{TF}_top_regulators_infer.svg", format="svg", bbox_inches="tight")
         #plt.close()
     
