@@ -8,13 +8,15 @@ import mplscience
 from typing import Sequence
 from anndata import AnnData
 from scvelo import logging as logg
+from tqdm.auto import tqdm
  
 import cellrank as cr
 import regvelo as rgv
 
-from ...plotting._markov_screen import _visits_diff_per_tf
-from ...plotting._markov_screen import _plot_visits_dist
-from ...plotting._markov_screen import _plot_visits_dist_combined
+from ..plotting._markov_screen import _visits_diff_per_tf
+from ..plotting._markov_screen import _plot_visits_dist
+from ..plotting._markov_screen import _plot_visits_dist_combined
+from ..plotting._utils import SIGNIFICANCE_PALETTE
 
 def TFscreening(
     adata: AnnData,
@@ -85,7 +87,7 @@ def TFscreening(
         TF_candidate = list(adata.var_names[adata.var["TF"]])
  
     # Run Markov simulation for each TF
-    for TF in TF_candidate:
+    for TF in tqdm(TF_candidate, desc="Markov simulation screening for multiple TFs"):
         adata_perturb = adata_perturb_dict[TF].copy()
         adata_perturb.obs[cluster_key] = adata.obs[cluster_key].copy()
  
@@ -226,7 +228,6 @@ def TFscreening(
         _plot_visits_dist_combined(
             df_all,
             TERMINAL_STATES,
-            SIGNIFICANCE_PALETTE,
             tick_range=0.5,
             candidate_list=TF_candidate,
             sig_to_keep=["*", "**", "***"],
@@ -234,4 +235,4 @@ def TFscreening(
  
     logg.info("markov simulation complete")
  
-    return res_table, adata
+    return res_table
