@@ -188,4 +188,3 @@ def _plot_visits_dist_combined(
                 spine.set_visible(True)
                 
             plt.show()
-   plt.show()
