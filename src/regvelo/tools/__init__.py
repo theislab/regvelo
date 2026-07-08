@@ -5,6 +5,7 @@ from ._set_output import set_output
 from ._in_silico_block_simulation import in_silico_block_simulation
 from ._TFScanning_func import TFScanning_func
 from ._TFscreening import TFscreening
+from ._TFscreening_wrapper import TFscreening as TFscreening_wrapper
 from ._markov_density_simulation import markov_density_simulation
 from ._simulated_visit_diff import simulated_visit_diff
 from ._regulation_scanning import regulation_scanning
@@ -18,6 +19,7 @@ __all__ = [
         "in_silico_block_simulation",
         "TFScanning_func",
         "TFscreening",
+        "TFscreening_wrapper",
         "markov_density_simulation",
         "simulated_visit_diff",
         "regulation_scanning",
