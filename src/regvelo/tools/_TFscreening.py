@@ -67,7 +67,6 @@ def TFscreening(
  
     - ``markov_dd_score_by_TF.csv``: per-TF density difference scores and significance per terminal state.
     - ``markov_visits_by_TF.csv``: per-cell visit counts, densities, and differences for each TF.
-    - ``markov_simulation_barplot_{terminal_state}.svg``: combined significance-filtered boxplot per terminal state.
     """
  
     # Compute baseline transition matrix
@@ -220,9 +219,6 @@ def TFscreening(
         df, palette_rel = _visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE)
         _plot_visits_dist(df, palette_rel, 0.5)
  
-        plt.savefig(f"{TF_candidate}_markov_density_change_barplot.svg", format="svg", bbox_inches="tight")
-        plt.close()
- 
     # Plot density likelihood for all factors per terminal state
     else:
         _plot_visits_dist_combined(
@@ -233,6 +229,6 @@ def TFscreening(
             sig_to_keep=["*", "**", "***"],
         )
  
-    logg.info("markov simulation complete")
+    logg.info("Markov simulation complete")
  
     return res_table
