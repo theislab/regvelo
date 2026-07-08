@@ -313,7 +313,8 @@ def plot_GRN_per_TF(
     terminal_state_to_plot,
     coef_targets,
     coef_regulators,
-    n_hits=10
+    n_hits=10,
+    device="cpu",
 ):
     """Plot regulon scores, GRN, and weight UMAPs for one TF and terminal states.
 
@@ -343,6 +344,8 @@ def plot_GRN_per_TF(
         :func:`compute_TF_regulon`.
     n_hits : int, optional
         Number of top edges to show per plot. Default ``10``.
+    device : str, optional
+        Device to use for model inference (e.g., "cuda:0" or "cpu"). Default ``"cpu"``.
     """
 
     def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits):
@@ -418,10 +421,10 @@ def plot_GRN_per_TF(
 
         return top_hits
 
-    vae = rgv.REGVELOVI.load(rgv_model, adata, accelerator="cpu")
+    vae = rgv.REGVELOVI.load(rgv_model, adata)
     
     GRN_prior = adata.uns["skeleton"].copy()
-    GRN_infer = rgv.tl.inferred_grn(vae, adata, label=cluster_key, group="all", data_frame=True, device="cpu")
+    GRN_infer = rgv.tl.inferred_grn(vae, adata, label=cluster_key, group="all", data_frame=True, device=device)
     GRN_mixed = GRN_prior * GRN_infer
     
     top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", n_hits)
