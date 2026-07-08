@@ -186,10 +186,6 @@ def _plot_visits_dist_combined(
 
             for spine in ax.spines.values():
                 spine.set_visible(True)
-
-            plt.savefig(
-                f"markov_simulation_barplot_{state}.svg",
-                dpi=300,
-                bbox_inches="tight",
-            )
+                
             plt.show()
+   plt.show()
