@@ -8,7 +8,12 @@ import scvelo as scv
 import mplscience
 import regvelo as rgv
 
-from ._utils import SIGNIFICANCE_PALETTE
+SIGNIFICANCE_PALETTE = {
+    "n.s.": "#dedede",
+    "*": "#90BAAD",
+    "**": "#A1E5AB",
+    "***": "#ADF6B1",
+}
 
 def plot_top_TF(
     markov_res_df,
@@ -86,7 +91,7 @@ def plot_top_TF(
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
         
-        #plt.savefig(f"top_depletion_hits.svg", format="svg", bbox_inches="tight", dpi=300)
+        plt.savefig(f"top_depletion_hits.svg", format="svg", bbox_inches="tight", dpi=300)
         plt.close()
 
     tf_hits = df["TF"]
@@ -119,7 +124,7 @@ def plot_top_TF(
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
 
-        #plt.savefig(f"top_increase_hits.svg", format="svg", bbox_inches="tight")
+        plt.savefig(f"top_increase_hits.svg", format="svg", bbox_inches="tight")
         plt.close()
 
     tf_hits = df["TF"]
@@ -303,7 +308,7 @@ def plot_GRN_per_TF(
     adata,
     rgv_model,
     cluster_key,
-    TF_candidate,
+    TF,
     TERMINAL_STATES,
     terminal_state_to_plot,
     coef_targets,
@@ -326,7 +331,7 @@ def plot_GRN_per_TF(
         Trained RegVelo model (also used to infer the GRN).
     cluster_key : str
         ``adata.obs`` column passed to ``rgv.tl.inferred_grn`` (the GRN grouping).
-    TF_candidate: list of str
+    TF: list of str
         List of transcription factor of interest.
     TERMINAL_STATES : list of str
         All terminal-state labels (kept for context / future looping).
@@ -413,34 +418,20 @@ def plot_GRN_per_TF(
 
         return top_hits
 
-    vae = rgv.REGVELOVI.load(rgv_model, adata)
+    vae = rgv.REGVELOVI.load(rgv_model, adata, accelerator="cpu")
     
     GRN_prior = adata.uns["skeleton"].copy()
-    GRN_infer = rgv.tl.inferred_grn(vae, adata, label=cluster_key, group="all", data_frame=True)
+    GRN_infer = rgv.tl.inferred_grn(vae, adata, label=cluster_key, group="all", data_frame=True, device="cpu")
     GRN_mixed = GRN_prior * GRN_infer
-
-    for TF in TF_candidate:
-        
-        top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", n_hits)
-        #plt.savefig(f"{TF}_top_targets_prior.svg", format="svg", bbox_inches="tight")
-        #plt.close()
-
-        top_hits_targets_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "targets", n_hits)
-        #plt.savefig(f"{TF}_top_targets_infer.svg", format="svg", bbox_inches="tight")
-        #plt.close()
-
-        top_hits_regulators_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "regulators", n_hits)
-        #plt.savefig(f"{TF}_top_regulators_prior.svg", format="svg", bbox_inches="tight")
-        #plt.close()
-
-        top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", n_hits)
-        #plt.savefig(f"{TF}_top_regulators_infer.svg", format="svg", bbox_inches="tight")
-        #plt.close()
     
-        plot_grn_weight(adata, vae, TF, top_hits_targets_infer)
-        #plt.savefig(f"{TF}_grn_targets_weight.svg", format="svg")
-        #plt.close()
+    top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", n_hits)
 
-        plot_grn_weight(adata, vae, TF, top_hits_regulators_infer)
-        #plt.savefig(f"{TF}_grn_regulators_weight.svg", format="svg")
-        #plt.close()
+    top_hits_targets_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "targets", n_hits)
+
+    top_hits_regulators_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "regulators", n_hits)
+
+    top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", n_hits)
+    
+    plot_grn_weight(adata, vae, TF, top_hits_targets_infer)
+
+    plot_grn_weight(adata, vae, TF, top_hits_regulators_infer)
