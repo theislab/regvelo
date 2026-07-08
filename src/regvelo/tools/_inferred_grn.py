@@ -36,7 +36,8 @@ def inferred_grn(
         If ``True`` and ``cell_specific_grn`` is ``False``, return the GRN as a :class:`pandas.DataFrame`.
     device
         Device to run GRN inference on, e.g. ``"cuda:0"`` or ``"cpu"``. The VAE module is moved
-        to this device before inference. Defaults to ``"cuda:0"``.
+        to this device before inference. Defaults to ``"cuda:0"``. If the specified device is
+        unavailable, will gracefully fall back to CPU.
 
     Returns
     -------
