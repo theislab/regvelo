@@ -47,7 +47,20 @@ def inferred_grn(
     if "Ms" not in adata.layers:
         raise KeyError("Layer 'Ms' not found in adata.layers.")
 
-    vae.module.to(device)
+    # Validate and normalize device specification
+    try:
+        # Try to move model to the specified device
+        vae.module.to(device)
+    except RuntimeError as e:
+        # If device is unavailable, gracefully fall back to CPU
+        import warnings
+        warnings.warn(
+            f"Device '{device}' is unavailable or invalid ({e}). "
+            f"Falling back to CPU for inference.",
+            UserWarning
+        )
+        device = "cpu"
+        vae.module.to(device)
 
     if cell_specific_grn is not True:
         # Retrieve unique cell types or groups from the specified label
