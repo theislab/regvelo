@@ -3,8 +3,6 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 import torch
-from types import SimpleNamespace
-from scvi.data import synthetic_iid
 import regvelo as rgv
 from regvelo import REGVELOVI
 
@@ -12,10 +10,9 @@ from .src.tools._TFscreening import TFscreening
 from .src.plotting._markov_screen import _visits_diff_per_tf, _plot_visits_dist, _plot_visits_dist_combined
 from .src.plotting._driver_TF_ranking import plot_top_TF, compute_TF_regulon, plot_grn_weight,  plot_GRN_per_TF
 
-# Common variables used in the test that were missing
 cluster_key = "cell_type"
-TERMINAL_STATES = ["mNC_head_mesenchymal"]
-STARTING_POINTS = ["start"]
+TERMINAL_STATES = ["mNC_head_mesenchymal, ""mNC_arch2", "mNC_hox34","Pigment"]
+STARTING_POINTS = ["NPB_nohox"]
 
 from .src.tools._TFscreening import TFscreening
 
@@ -23,25 +20,22 @@ from .src.plotting._markov_screen import _visits_diff_per_tf, _plot_visits_dist,
 from .src.plotting._driver_TF_ranking import plot_top_TF, compute_TF_regulon, plot_grn_weight,  plot_GRN_per_TF
 
 def test_markov():
-    adata = synthetic_iid()
-    adata.layers["spliced"] = adata.X.copy()
-    adata.layers["unspliced"] = adata.X.copy()
-    adata.var_names = "Gene" + adata.var_names
-    n_gene = len(adata.var_names)
-  
-    ## create W
-    grn_matrix = np.random.choice([0, 1], size=(n_gene,n_gene), p=[0.8, 0.2]).T
-    W = pd.DataFrame(grn_matrix, index=adata.var_names, columns=adata.var_names)
-    adata.uns["skeleton"] = W
-    TF_list = adata.var_names.tolist()
+    adata = rgv.datasets.zebrafish_nc()
+    prior_net = rgv.datasets.zebrafish_grn()
+    TF_list = adata.var_names[adata.var["is_tf"]].tolist()
 
-    ## training process
+    sc.pp.neighbors(adata, n_neighbors=30, n_pcs=50)
+    scv.pp.moments(adata)
+
+    adata = rgv.pp.preprocess_data(adata)
+    adata = rgv.pp.set_prior_grn(adata, prior_net.T)
+
     W = adata.uns["skeleton"].copy()
     W = torch.tensor(np.array(W))
-    REGVELOVI.setup_anndata(adata, spliced_layer="spliced", unspliced_layer="unspliced")
+    REGVELOVI.setup_anndata(adata, spliced_layer="Ms", unspliced_layer="Mu")
 
     ## Training the model
-    reg_vae = REGVELOVI(adata,W=W.T,regulators = TF_list)
+    reg_vae = REGVELOVI(adata, W=W.T, regulators = TF_list)
     reg_vae.train()
   
     reg_vae.get_latent_representation()
@@ -57,7 +51,7 @@ def test_markov():
     MODEL = reg_vae
     adata_perturb_dict = {}
 
-    TF_candidate = ["zic2a", "elf1"]
+    TF_candidate = ["nr2f5", "elf1"]
 
     for TF in TF_candidate:
           adata_target_perturb, reg_vae_perturb = rgv.tl.in_silico_block_simulation(model=MODEL, adata=adata, TF=TF, cutoff=0)
@@ -82,27 +76,27 @@ def test_markov():
                        TERMINAL_STATES, 
                        STARTING_POINTS, 
                        tf_ko_list = TF_candidate, 
-                       cluster_key = 'cell_type', 
+                       cluster_key = cluster_key, 
                        method = "stepwise", 
                        n_step_to_use = 500) 
     
     plot_top_TF(res_df, 
                 adata, 
-                cluster_key=['cell_type'], 
+                cluster_key=cluster_key, 
                 threshold=0.1)
 
     coef_targets, coef_regulators = compute_TF_regulon(adata, 
                                                        MODEL, 
-                                                       cluster_key='cell_type', 
-                                                       TF=['zic2a'], 
+                                                       cluster_key=cluster_key, 
+                                                       TF=TF_candidate[0], 
                                                        TERMINAL_STATES=TERMINAL_STATES)
 
     plot_GRN_per_TF(adata, 
                     rgv_model, 
-                    cluster_key=['cell_type'], 
-                    TF=['zic2a'], 
+                    cluster_key=cluster_key, 
+                    TF=TF_candidate[0], 
                     TERMINAL_STATES, 
-                    terminal_state_to_plot="mNC_head_mesenchymal", 
+                    terminal_state_to_plot=TERMINAL_STATES[0], 
                     coef_targets=coef_targets, 
                     coef_regulators=coef_regulators, 
                     n_hits=10)
