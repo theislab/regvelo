@@ -3,21 +3,19 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 import torch
+import scanpy as sc
+import scvelo as scv
+import cellrank as cr
 import regvelo as rgv
 from regvelo import REGVELOVI
 
 from .src.tools._TFscreening import TFscreening
 from .src.plotting._markov_screen import _visits_diff_per_tf, _plot_visits_dist, _plot_visits_dist_combined
-from .src.plotting._driver_TF_ranking import plot_top_TF, compute_TF_regulon, plot_grn_weight,  plot_GRN_per_TF
+from .src.plotting._driver_TF_ranking import plot_top_TF, compute_TF_regulon, plot_grn_weight, plot_GRN_per_TF
 
 cluster_key = "cell_type"
-TERMINAL_STATES = ["mNC_head_mesenchymal, ""mNC_arch2", "mNC_hox34","Pigment"]
+TERMINAL_STATES = ["mNC_head_mesenchymal", "mNC_arch2", "mNC_hox34", "Pigment"]
 STARTING_POINTS = ["NPB_nohox"]
-
-from .src.tools._TFscreening import TFscreening
-
-from .src.plotting._markov_screen import _visits_diff_per_tf, _plot_visits_dist, _plot_visits_dist_combined
-from .src.plotting._driver_TF_ranking import plot_top_TF, compute_TF_regulon, plot_grn_weight,  plot_GRN_per_TF
 
 def test_markov():
     adata = rgv.datasets.zebrafish_nc()
@@ -35,9 +33,9 @@ def test_markov():
     REGVELOVI.setup_anndata(adata, spliced_layer="Ms", unspliced_layer="Mu")
 
     ## Training the model
-    reg_vae = REGVELOVI(adata, W=W.T, regulators = TF_list)
+    reg_vae = REGVELOVI(adata, W=W.T, regulators=TF_list)
     reg_vae.train()
-  
+
     reg_vae.get_latent_representation()
     reg_vae.get_velocity()
     reg_vae.get_latent_time()
@@ -54,8 +52,8 @@ def test_markov():
     TF_candidate = ["nr2f5", "elf1"]
 
     for TF in TF_candidate:
-          adata_target_perturb, reg_vae_perturb = rgv.tl.in_silico_block_simulation(model=MODEL, adata=adata, TF=TF, cutoff=0)
-          adata_perturb_dict[TF] = adata_target_perturb
+        adata_target_perturb, reg_vae_perturb = rgv.tl.in_silico_block_simulation(model=MODEL, adata=adata, TF=TF, cutoff=0)
+        adata_perturb_dict[TF] = adata_target_perturb
 
     # Build per-terminal-state cell index map from baseline annotations
     ct_indices = {
@@ -69,34 +67,41 @@ def test_markov():
         estimator.set_terminal_states(ct_indices)
         estimator.compute_fate_probabilities()
         adata_perturb_dict[TF] = adata_target_perturb
-    
-  
-    res_df = TFscreening(adata, 
-                       adata_perturb_dict, 
-                       TERMINAL_STATES, 
-                       STARTING_POINTS, 
-                       tf_ko_list = TF_candidate, 
-                       cluster_key = cluster_key, 
-                       method = "stepwise", 
-                       n_step_to_use = 500) 
-    
-    plot_top_TF(res_df, 
-                adata, 
-                cluster_key=cluster_key, 
+
+    res_df = TFscreening(adata,
+                         adata_perturb_dict,
+                         TERMINAL_STATES,
+                         STARTING_POINTS,
+                         tf_ko_list=TF_candidate,
+                         cluster_key=cluster_key,
+                         method="stepwise",
+                         n_step_to_use=500)
+
+    # Assert that results dataframe is not empty
+    assert not res_df.empty, "TFscreening results dataframe is empty"
+    assert len(res_df) > 0, "No TF screening results were computed"
+
+    plot_top_TF(res_df,
+                adata,
+                cluster_key=cluster_key,
                 threshold=0.1)
 
-    coef_targets, coef_regulators = compute_TF_regulon(adata, 
-                                                       MODEL, 
-                                                       cluster_key=cluster_key, 
-                                                       TF=TF_candidate[0], 
+    coef_targets, coef_regulators = compute_TF_regulon(adata,
+                                                       MODEL,
+                                                       cluster_key=cluster_key,
+                                                       TF=TF_candidate[0],
                                                        TERMINAL_STATES=TERMINAL_STATES)
 
-    plot_GRN_per_TF(adata, 
-                    rgv_model, 
-                    cluster_key=cluster_key, 
-                    TF=TF_candidate[0], 
-                    TERMINAL_STATES, 
-                    terminal_state_to_plot=TERMINAL_STATES[0], 
-                    coef_targets=coef_targets, 
-                    coef_regulators=coef_regulators, 
+    # Assert that coefficients were computed
+    assert coef_targets is not None, "coef_targets is None"
+    assert coef_regulators is not None, "coef_regulators is None"
+
+    plot_GRN_per_TF(adata,
+                    MODEL,
+                    cluster_key=cluster_key,
+                    TF=TF_candidate[0],
+                    terminal_states=TERMINAL_STATES,
+                    terminal_state_to_plot=TERMINAL_STATES[0],
+                    coef_targets=coef_targets,
+                    coef_regulators=coef_regulators,
                     n_hits=10)
