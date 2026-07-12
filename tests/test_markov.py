@@ -1,5 +1,21 @@
 #Testing function for Markov screening and plotting
 import anndata as ad
+import numpy as np
+import pandas as pd
+import torch
+from types import SimpleNamespace
+from scvi.data import synthetic_iid
+import regvelo as rgv
+from regvelo import REGVELOVI
+
+from .src.tools._TFscreening import TFscreening
+from .src.plotting._markov_screen import _visits_diff_per_tf, _plot_visits_dist, _plot_visits_dist_combined
+from .src.plotting._driver_TF_ranking import plot_top_TF, compute_TF_regulon, plot_grn_weight,  plot_GRN_per_TF
+
+# Common variables used in the test that were missing
+cluster_key = "cell_type"
+TERMINAL_STATES = ["mNC_head_mesenchymal"]
+STARTING_POINTS = ["start"]
 
 from .src.tools._TFscreening import TFscreening
 
