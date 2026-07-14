@@ -1,6 +1,8 @@
+import os
+
 import numpy as np
 import pandas as pd
- 
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import mplscience
@@ -27,8 +29,11 @@ def TFscreening(
     cluster_key: str,
     method: str = "stepwise",
     n_step_to_use: int = 500,
+    n_simulations: int = 1000,
+    seed: int = 0,
+    output_dir: str = ".",
 ) -> tuple[pd.DataFrame, AnnData]:
-    
+
     r"""Run Markov simulations to score TF perturbation effects on cell fate density.
  
     For each TF, simulates random walks from :attr:`STARTING_POINTS` to
@@ -42,7 +47,7 @@ def TFscreening(
     adata
         Baseline AnnData with velocity outputs and terminal state annotations in ``adata.obs['term_states_fwd']``.
     adata_perturb_dict
-        Perturbed AnnData objects keyed by TF name, as returned by ``tf_perturbation``.
+        Perturbed AnnData objects keyed by TF name, as returned by :func:`rgv.tl.in_silico_block_simulation`.
     TERMINAL_STATES
         Terminal state labels used to define absorption boundaries for the Markov simulation.
     STARTING_POINTS
@@ -55,7 +60,13 @@ def TFscreening(
         Markov simulation method passed to :func:`rgv.tl.markov_density_simulation`, either ``'stepwise'`` or ``'one-step'``.
     n_step_to_use
         Number of steps for the Markov random walk.
- 
+    n_simulations
+        Number of simulations per starting cell, passed to :func:`rgv.tl.markov_density_simulation`.
+    seed
+        Random seed passed to :func:`rgv.tl.markov_density_simulation`.
+    output_dir
+        Directory to save the result CSVs into. Default ``"."`` (current working directory).
+
     Returns
     -------
  
@@ -101,8 +112,10 @@ def TFscreening(
             TERMINAL_STATES,
             method=method,
             n_steps=n_step_to_use,
+            n_simulations=n_simulations,
+            seed=seed,
         )
- 
+
         _ = rgv.tl.markov_density_simulation(
             adata_perturb,
             vkt_p,
@@ -111,6 +124,8 @@ def TFscreening(
             TERMINAL_STATES,
             method=method,
             n_steps=n_step_to_use,
+            n_simulations=n_simulations,
+            seed=seed,
         )
  
         dd_score, dd_sig = rgv.tl.simulated_visit_diff(adata, adata_perturb, TERMINAL_STATES)
@@ -150,8 +165,8 @@ def TFscreening(
         for col in ["visits", "visits_dens", "visits_diff", "visits_diff_smooth"]:
             del adata.obs[col]
  
-    res_table.to_csv("markov_dd_score_by_TF.csv", sep=",")
-    visits_table.to_csv("markov_visits_by_TF.csv", sep=",")
+    res_table.to_csv(os.path.join(output_dir, "markov_dd_score_by_TF.csv"), sep=",")
+    visits_table.to_csv(os.path.join(output_dir, "markov_visits_by_TF.csv"), sep=",")
  
     # Plot Markov results
     res_table["delta_success_rate"] = (
@@ -183,7 +198,7 @@ def TFscreening(
         for col in ["visits", "visits_dens", "visits_diff", "visits_diff_smooth"]:
             del adata.obs[col]
  
-    df_all.to_csv("markov_screen_perturbation_rate.csv")
+    df_all.to_csv(os.path.join(output_dir, "markov_screen_perturbation_rate.csv"))
  
     # Make combined plot for all terminal_states if only testing individual TF
     if len(TF_candidate) == 1:
@@ -199,22 +214,28 @@ def TFscreening(
                                                      start_indices,
                                                      terminal_indices,
                                                      TERMINAL_STATES,
-                                                     method=method)
- 
+                                                     method=method,
+                                                     n_steps=n_step_to_use,
+                                                     n_simulations=n_simulations,
+                                                     seed=seed)
+
         _ = rgv.tl.markov_density_simulation(adata_perturb,
                                              vkt_p,
                                              start_indices,
                                              terminal_indices,
                                              TERMINAL_STATES,
-                                             method=method)
- 
+                                             method=method,
+                                             n_steps=n_step_to_use,
+                                             n_simulations=n_simulations,
+                                             seed=seed)
+
         dd_score, dd_sig = rgv.tl.simulated_visit_diff(adata, adata_perturb, TERMINAL_STATES)
- 
+
         rgv.pl.simulated_visit_diff(adata,
                             adata_perturb,
                             TERMINAL_STATES,
                             total_simulations,
-                            title="Density difference (elf1)")
+                            title=f"Density difference {TF}")
  
         df, palette_rel = _visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE)
         _plot_visits_dist(df, palette_rel, 0.5)

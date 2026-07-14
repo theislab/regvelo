@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,18 +10,12 @@ import scvelo as scv
 import mplscience
 import regvelo as rgv
 
-SIGNIFICANCE_PALETTE = {
-    "n.s.": "#dedede",
-    "*": "#90BAAD",
-    "**": "#A1E5AB",
-    "***": "#ADF6B1",
-}
-
 def plot_top_TF(
     markov_res_df,
     adata,
     cluster_key,
     threshold=0.1,
+    output_dir=".",
 ):
     """Rank TFs by their knockout effect and plot the top depletion hits.
 
@@ -44,6 +40,9 @@ def plot_top_TF(
     threshold : float, optional
         Upper bound on ``delta_success_rate`` for a TF to be shown. More negative
         values are stronger depletion hits. Default ``0.1``.
+    output_dir : str, optional
+        Directory to save the depletion/increase hit SVGs into. Default ``"."``
+        (current working directory).
 
     Returns
     -------
@@ -91,7 +90,7 @@ def plot_top_TF(
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
         
-        plt.savefig(f"top_depletion_hits.svg", format="svg", bbox_inches="tight", dpi=300)
+        plt.savefig(os.path.join(output_dir, "top_depletion_hits.svg"), format="svg", bbox_inches="tight", dpi=300)
         plt.close()
 
     tf_hits = df["TF"]
@@ -124,7 +123,7 @@ def plot_top_TF(
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
 
-        plt.savefig(f"top_increase_hits.svg", format="svg", bbox_inches="tight")
+        plt.savefig(os.path.join(output_dir, "top_increase_hits.svg"), format="svg", bbox_inches="tight")
         plt.close()
 
     tf_hits = df["TF"]
@@ -132,133 +131,12 @@ def plot_top_TF(
     sc.pl.matrixplot(adata, tf_hits, groupby=cluster_key, dendrogram=False, swap_axes=True)
 
 
-def compute_TF_regulon(
-    adata,
-    rgv_model,
-    cluster_key,
-    TF,
-    TERMINAL_STATES,
-    threshold=0.4,
-    n_states=7,
-    n_samples=50
-):
-    """Scan each candidate TF's regulon (targets and regulators) and save scores.
-
-    For every TF in ``TF``, extracts the inferred GRN weights from the trained
-    model, identifies that TF's targets and regulators above ``threshold`` (by
-    absolute weight), and runs ``rgv.tl.regulation_scanning`` for both edge sets,
-    returning the per-edge coefficient tables keyed by TF.
-
-    Parameters
-    ----------
-    adata : anndata.AnnData
-        AnnData used to train ``rgv_model``. Must contain ``uns["skeleton"]``
-        (the prior-GRN adjacency) whose row/column labels name targets/regulators.
-    rgv_model : regvelo.REGVELOVI
-        Trained RegVelo model object. Its ``module.v_encoder.fc1.weight`` provides
-        the inferred GRN, and it is passed to ``rgv.tl.regulation_scanning``.
-        (If you instead have a saved model directory, load it first with
-        ``rgv.REGVELOVI.load(path, adata)``.)
-    cluster_key : str
-        ``adata.obs`` column used as the cluster label during scanning
-    TF : list of str
-        Candidate transcription factor to scan.
-    TERMINAL_STATES : list of str
-        Terminal-state labels passed to ``rgv.tl.regulation_scanning``.
-    threshold : float, optional
-        Absolute GRN-weight cutoff for retaining an edge as a target/regulator.
-        Default ``0.4``.
-    n_states : int, optional
-        Number of macrostates used by ``regulation_scanning``. Default ``7``.
-    n_samples : int, optional
-        Number of samples drawn per scan. Default ``50``.
-
-    Returns
-    ----------
-    coef_targets, coef_regulators: dict of str to DataFrame
-        Per-TF target and regulator coefficient tables, keyed by TF, to be
-        passed directly into :func:`plot_GRN_per_TF`.
-
-    """
-    vae = rgv.REGVELOVI.load(rgv_model, adata)
-
-    GRN = pd.DataFrame(
-        vae.module.v_encoder.fc1.weight.detach().cpu().numpy(),
-        index=adata.uns["skeleton"].index.tolist(),
-        columns=adata.uns["skeleton"].columns.tolist(),
-    )
-
-    import sys
-    
-    if not sys.warnoptions:
-        import warnings
-        warnings.simplefilter("ignore")
-
-    TF_candidate = TF
-    coef_targets = {}
-    coef_regulators = {}
-
-    for TF in TF_candidate:
-        print(f'Candidate factor: {TF}')
-        targets = GRN.loc[:,TF][GRN.loc[:,TF].abs() > threshold]
-        targets = np.array(targets.index.tolist())[np.array(targets) != 0]
-
-        if targets.size == 0:
-            print("No targets found - recommended to try lower threshold")
-
-        else: 
-            n_targets = len(targets)
-            print(f'Found {n_targets} targets')
-            
-            perturb_screening = rgv.tl.regulation_scanning(model=rgv_model, 
-                                                       adata=adata, 
-                                                       n_states=7, 
-                                                       cluster_label=cluster_key, 
-                                                       terminal_states=TERMINAL_STATES, 
-                                                       TF=[TF], 
-                                                       target=targets, 
-                                                       effect=0,
-                                                       n_samples=50)
-        
-            coef = pd.DataFrame(np.array(perturb_screening["coefficient"]))
-            coef.index = perturb_screening["links"]
-            coef.columns = list(perturb_screening["coefficient"][0].keys())
-            coef_targets[TF] = coef
-
-        # Filter to top regulators only
-        regulators = GRN.loc[TF,:][GRN.loc[TF,:].abs() > threshold]
-        regulators = np.array(regulators.index.tolist())[np.array(regulators) != 0]
-
-        if regulators.size == 0:
-            print("No targets found - recommended to try lower threshold")
-            
-        else:
-            n_regulators = len(regulators)
-            print(f'Found {n_regulators} regulators')
-            
-            perturb_screening_tf = rgv.tl.regulation_scanning(model=rgv_model, 
-                                                          adata=adata, 
-                                                          n_states=7, 
-                                                          cluster_label=cluster_key, 
-                                                          terminal_states=TERMINAL_STATES, 
-                                                          TF=regulators, 
-                                                          target=[TF], 
-                                                          effect=0,
-                                                          n_samples=50)
-        
-            coef = pd.DataFrame(np.array(perturb_screening_tf["coefficient"]))
-            coef.index = perturb_screening_tf["links"]
-            coef.columns = list(perturb_screening_tf["coefficient"][0].keys())
-            coef_regulators[TF] = coef
-
-    return coef_targets, coef_regulators
-
-
 def plot_grn_weight(
-    adata, 
-    vae, 
-    TF, 
-    target_list):
+    adata,
+    vae,
+    TF,
+    target_list,
+    device="cpu"):
 
     """Plot cell-resolved regulatory weights for one TF against several targets.
 
@@ -278,8 +156,10 @@ def plot_grn_weight(
         Transcription factor (regulator) whose outgoing edges are plotted.
     target_list : iterable of str
         Target genes to plot, one row each.
+    device : str, optional
+        Device passed to ``rgv.tl.inferred_grn`` for GRN inference. Default ``"cpu"``.
     """
-    GRN = rgv.tl.inferred_grn(vae, adata, cell_specific_grn=True)
+    GRN = rgv.tl.inferred_grn(vae, adata, cell_specific_grn=True, device=device)
 
     ncols = 3
     nrows = len(target_list)
@@ -328,8 +208,10 @@ def plot_GRN_per_TF(
     ----------
     adata : anndata.AnnData
         AnnData used to train ``rgv_model``; must contain ``uns["skeleton"]``.
-    rgv_model : regvelo.REGVELOVI
-        Trained RegVelo model (also used to infer the GRN).
+    rgv_model : str
+        Path to a saved, trained RegVelo model directory (as produced by
+        ``REGVELOVI.save``). Loaded via ``REGVELOVI.load(rgv_model, adata)``
+        and used to infer the GRN.
     cluster_key : str
         ``adata.obs`` column passed to ``rgv.tl.inferred_grn`` (the GRN grouping).
     TF: list of str
@@ -341,7 +223,7 @@ def plot_GRN_per_TF(
         column name in ``coef_targets``/``coef_regulators``.
     coef_targets, coef_regulators : dict of str to DataFrame
         Per-TF target and regulator coefficient tables, as returned by
-        :func:`compute_TF_regulon`.
+        :func:`regvelo.tl.compute_TF_regulon`.
     n_hits : int, optional
         Number of top edges to show per plot. Default ``10``.
     device : str, optional
@@ -435,6 +317,6 @@ def plot_GRN_per_TF(
 
     top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", n_hits)
     
-    plot_grn_weight(adata, vae, TF, top_hits_targets_infer)
+    plot_grn_weight(adata, vae, TF, top_hits_targets_infer, device=device)
 
-    plot_grn_weight(adata, vae, TF, top_hits_regulators_infer)
+    plot_grn_weight(adata, vae, TF, top_hits_regulators_infer, device=device)

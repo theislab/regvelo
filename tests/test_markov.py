@@ -9,15 +9,11 @@ import cellrank as cr
 import regvelo as rgv
 from regvelo import REGVELOVI
 
-from .src.tools._TFscreening import TFscreening
-from .src.plotting._markov_screen import _visits_diff_per_tf, _plot_visits_dist, _plot_visits_dist_combined
-from .src.plotting._driver_TF_ranking import plot_top_TF, compute_TF_regulon, plot_grn_weight, plot_GRN_per_TF
-
 cluster_key = "cell_type"
 TERMINAL_STATES = ["mNC_head_mesenchymal", "mNC_arch2", "mNC_hox34", "Pigment"]
 STARTING_POINTS = ["NPB_nohox"]
 
-def test_markov():
+def test_markov(tmp_path):
     adata = rgv.datasets.zebrafish_nc()
     prior_net = rgv.datasets.zebrafish_grn()
     TF_list = adata.var_names[adata.var["is_tf"]].tolist()
@@ -34,7 +30,7 @@ def test_markov():
 
     ## Training the model
     reg_vae = REGVELOVI(adata, W=W.T, regulators=TF_list)
-    reg_vae.train()
+    reg_vae.train(max_epochs=100)
 
     reg_vae.get_latent_representation()
     reg_vae.get_velocity()
@@ -42,11 +38,12 @@ def test_markov():
 
     vk = cr.kernels.VelocityKernel(adata).compute_transition_matrix()
     estimator = cr.estimators.GPCCA(vk)
-    estimator.compute_macrostates(n_states=10, cluster_key=cluster_key)
+    estimator.compute_macrostates(n_states=7, cluster_key=cluster_key)
     estimator.set_terminal_states(TERMINAL_STATES)
     estimator.compute_fate_probabilities(tol=1e-5)
 
-    MODEL = reg_vae
+    MODEL = str(tmp_path / "regvelo_model")
+    reg_vae.save(MODEL)
     adata_perturb_dict = {}
 
     TF_candidate = ["nr2f5", "elf1"]
@@ -63,30 +60,31 @@ def test_markov():
     for TF, adata_target_perturb in adata_perturb_dict.items():
         vkp = cr.kernels.VelocityKernel(adata_target_perturb).compute_transition_matrix()
         estimator = cr.estimators.GPCCA(vkp)
-        estimator.compute_macrostates(n_states=10, cluster_key=cluster_key)
+        estimator.compute_macrostates(n_states=7, cluster_key=cluster_key)
         estimator.set_terminal_states(ct_indices)
         estimator.compute_fate_probabilities()
         adata_perturb_dict[TF] = adata_target_perturb
 
-    res_df = TFscreening(adata,
+    res_df = rgv.tl.TFscreening(adata,
                          adata_perturb_dict,
                          TERMINAL_STATES,
                          STARTING_POINTS,
                          tf_ko_list=TF_candidate,
                          cluster_key=cluster_key,
                          method="stepwise",
-                         n_step_to_use=500)
+                         n_step_to_use=100,
+                         n_simulations=200)
 
     # Assert that results dataframe is not empty
     assert not res_df.empty, "TFscreening results dataframe is empty"
     assert len(res_df) > 0, "No TF screening results were computed"
 
-    plot_top_TF(res_df,
+    rgv.pl.plot_top_TF(res_df,
                 adata,
                 cluster_key=cluster_key,
                 threshold=0.1)
 
-    coef_targets, coef_regulators = compute_TF_regulon(adata,
+    coef_targets, coef_regulators = rgv.tl.compute_TF_regulon(adata,
                                                        MODEL,
                                                        cluster_key=cluster_key,
                                                        TF=TF_candidate[0],
@@ -96,11 +94,11 @@ def test_markov():
     assert coef_targets is not None, "coef_targets is None"
     assert coef_regulators is not None, "coef_regulators is None"
 
-    plot_GRN_per_TF(adata,
+    rgv.pl.plot_GRN_per_TF(adata,
                     MODEL,
                     cluster_key=cluster_key,
                     TF=TF_candidate[0],
-                    terminal_states=TERMINAL_STATES,
+                    TERMINAL_STATES=TERMINAL_STATES,
                     terminal_state_to_plot=TERMINAL_STATES[0],
                     coef_targets=coef_targets,
                     coef_regulators=coef_regulators,
