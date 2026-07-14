@@ -30,7 +30,7 @@ def test_markov(tmp_path):
 
     ## Training the model
     reg_vae = REGVELOVI(adata, W=W.T, regulators=TF_list)
-    reg_vae.train(max_epochs=100)
+    reg_vae.train()
 
     reg_vae.get_latent_representation()
     reg_vae.get_velocity()
@@ -38,7 +38,7 @@ def test_markov(tmp_path):
 
     vk = cr.kernels.VelocityKernel(adata).compute_transition_matrix()
     estimator = cr.estimators.GPCCA(vk)
-    estimator.compute_macrostates(n_states=7, cluster_key=cluster_key)
+    estimator.compute_macrostates(n_states=10, cluster_key=cluster_key)
     estimator.set_terminal_states(TERMINAL_STATES)
     estimator.compute_fate_probabilities(tol=1e-5)
 
