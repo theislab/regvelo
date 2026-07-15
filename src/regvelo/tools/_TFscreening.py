@@ -29,7 +29,6 @@ def TFscreening(
     n_simulations: int = 1000,
     seed: int = 0,
     output_dir: str = ".",
-    depletion_likelihood = 
 ) -> tuple[pd.DataFrame, AnnData]:
 
     r"""Run Markov simulations to score TF perturbation effects on cell fate density.
