@@ -46,8 +46,7 @@ def plot_top_TF(
 
     Returns
     -------
-    pandas.Index
-        The TF identifiers selected as top hits (``tf_hits``).
+    None
 
     """
     
@@ -89,9 +88,6 @@ def plot_top_TF(
         plt.gca().spines["right"].set_color("black")
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
-        
-        plt.savefig(os.path.join(output_dir, "top_depletion_hits.svg"), format="svg", bbox_inches="tight", dpi=300)
-        plt.close()
 
     tf_hits = df["TF"]
 
@@ -122,9 +118,6 @@ def plot_top_TF(
         plt.gca().spines["right"].set_color("black")
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
-
-        plt.savefig(os.path.join(output_dir, "top_increase_hits.svg"), format="svg", bbox_inches="tight")
-        plt.close()
 
     tf_hits = df["TF"]
 
@@ -158,6 +151,10 @@ def plot_grn_weight(
         Target genes to plot, one row each.
     device : str, optional
         Device passed to ``rgv.tl.inferred_grn`` for GRN inference. Default ``"cpu"``.
+
+    Returns
+    -------
+    None
     """
     GRN = rgv.tl.inferred_grn(vae, adata, cell_specific_grn=True, device=device)
 
@@ -228,6 +225,10 @@ def plot_GRN_per_TF(
         Number of top edges to show per plot. Default ``10``.
     device : str, optional
         Device to use for model inference (e.g., "cuda:0" or "cpu"). Default ``"cpu"``.
+
+    Returns
+    -------
+    None
     """
 
     def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits):
