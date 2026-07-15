@@ -89,8 +89,6 @@ def plot_top_TF(
         plt.gca().spines["left"].set_visible(False)
         plt.gca().spines["bottom"].set_color("black")
 
-    tf_hits = df["TF"]
-
     # Keep only the strongest increase rate hits
     df = res_sort[res_sort["delta_success_rate"] > threshold]
 
