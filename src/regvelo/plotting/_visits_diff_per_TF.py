@@ -52,7 +52,6 @@ def visits_diff_per_tf(
             data.append({"Value": val, "Group": subgrp})
 
         significance = rgv.mt.get_significance(p_value)
-        print(f"{ts}: {p_value}")
         palette_rel.append(sig_palette[significance])
 
     return pd.DataFrame(data), palette_rel

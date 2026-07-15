@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import mplscience
  
-from typing import Sequence
 from anndata import AnnData
 from scvelo import logging as logg
 from tqdm.auto import tqdm
@@ -140,7 +139,7 @@ def TFscreening(
             title=f"Density difference {TF}",
         )
  
-        df, palette_rel = rgv.pl._visits_diff_per_tf(
+        df, palette_rel = rgv.pl.visits_diff_per_tf(
             adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE
         )
  
@@ -151,6 +150,15 @@ def TFscreening(
             res_table.loc[TF, f"dd_score_{state}"] = dd_score[i]
             res_table.loc[TF, f"dd_sig_{state}"] = dd_sig[i]
  
+        # Verify required obs columns exist before accessing
+        required_cols = ["visits_diff", "visits_diff_smooth"]
+        for col in required_cols:
+            if col not in adata.obs:
+                raise KeyError(
+                    f"Column '{col}' not found in adata.obs after simulated_visit_diff(). "
+                    f"Available columns: {list(adata.obs.columns)}"
+                )
+        
         visits_table[f"visits_{TF}"] = adata.obs["visits"].values
         visits_table[f"visits_dens_{TF}"] = adata.obs["visits_dens"].values
         visits_table[f"visits_diff_{TF}"] = adata.obs["visits_diff"].values
@@ -166,10 +174,12 @@ def TFscreening(
     visits_table.to_csv(os.path.join(output_dir, "markov_visits_by_TF.csv"), sep=",")
  
     # Plot Markov results
-    res_table["delta_success_rate"] = (
-        res_table["perturb_rate"] / res_table["ctrl_rate"] - 1
+    # Handle division by zero gracefully
+    res_table["delta_success_rate"] = np.where(
+        res_table["ctrl_rate"] != 0,
+        res_table["perturb_rate"] / res_table["ctrl_rate"] - 1,
+        np.nan
     )
-    res_sort = res_table.sort_values(by="delta_success_rate", ascending=True)  # noqa: F841
  
     df_all = pd.DataFrame()
  
@@ -183,7 +193,7 @@ def TFscreening(
             res_table.loc[TF, f"dd_sig_{state}"] for state in TERMINAL_STATES
         ])
  
-        df, _ = rgv.pl._visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig_tf, SIGNIFICANCE_PALETTE)
+        df, _ = rgv.pl.visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig_tf, SIGNIFICANCE_PALETTE)
         df["Factor"] = TF
  
         for state in TERMINAL_STATES:
@@ -234,19 +244,19 @@ def TFscreening(
                             total_simulations,
                             title=f"Density difference {TF}")
  
-        df, palette_rel = rgv.pl._visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE)
-        rgv.pl._plot_visits_dist(df, palette_rel, 0.5)
+        df, palette_rel = rgv.pl.visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE)
+        rgv.pl.plot_visits_dist(df, palette_rel, 0.5)
  
     # Plot density likelihood for all factors per terminal state
     else:
-        rgv.pl._plot_visits_dist_combined(
+        rgv.pl.plot_visits_dist_screen(
             df_all,
             TERMINAL_STATES,
-            tick_range=0.5,
             candidate_list=TF_candidate,
+            tick_range=0.5,
             sig_to_keep=["*", "**", "***"],
         )
  
     logg.info("Markov simulation complete")
  
-    return res_table
+    return res_table, adata
