@@ -6,8 +6,6 @@ from typing import Sequence
 import mplscience
 import seaborn as sns
 from anndata import AnnData
-
-import cellrank as cr
 import regvelo as rgv
 
 from ._utils import SIGNIFICANCE_PALETTE
