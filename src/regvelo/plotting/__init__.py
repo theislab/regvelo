@@ -9,7 +9,8 @@ from ._visits_diff_per_TF import visits_diff_per_tf
 from ._plot_visits_dist import plot_visits_dist
 from ._plot_visits_dist_screen import plot_visits_dist_screen
 from ._driver_TF_ranking import plot_top_TF 
-from ._plot_TF_regulon import plot_grn_weight, plot_regulon, plot_GRN_per_TF
+from ._plot_grn_weight import plot_grn_weight
+from ._plot_TF_regulon import plot_regulon
 
 __all__ = [
         "commitment_score",
@@ -23,5 +24,4 @@ __all__ = [
         "plot_top_TF",
         "plot_grn_weight",
         "plot_regulon",
-        "plot_GRN_per_TF",
         ]
