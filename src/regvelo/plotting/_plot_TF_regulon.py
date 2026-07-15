@@ -112,7 +112,7 @@ def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits):
 
             plt.xlabel("Depletion likelihood")
             plt.ylabel("")
-            plt.title(f"{terminal_state_to_plot}")
+            plt.title(f"{terminal_state_to_plot}_{target_type}")
 
             plt.gca().spines["top"].set_visible(False)
             plt.gca().spines["right"].set_visible(False)
