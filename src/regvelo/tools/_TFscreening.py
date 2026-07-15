@@ -15,9 +15,6 @@ from tqdm.auto import tqdm
 import cellrank as cr
 import regvelo as rgv
 
-from ..plotting._markov_screen import _visits_diff_per_tf
-from ..plotting._markov_screen import _plot_visits_dist
-from ..plotting._markov_screen import _plot_visits_dist_combined
 from ..plotting._utils import SIGNIFICANCE_PALETTE
 
 def TFscreening(
@@ -32,6 +29,7 @@ def TFscreening(
     n_simulations: int = 1000,
     seed: int = 0,
     output_dir: str = ".",
+    depletion_likelihood = 
 ) -> tuple[pd.DataFrame, AnnData]:
 
     r"""Run Markov simulations to score TF perturbation effects on cell fate density.
@@ -143,7 +141,7 @@ def TFscreening(
             title=f"Density difference {TF}",
         )
  
-        df, palette_rel = _visits_diff_per_tf(
+        df, palette_rel = rgv.pl._visits_diff_per_tf(
             adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE
         )
  
@@ -186,7 +184,7 @@ def TFscreening(
             res_table.loc[TF, f"dd_sig_{state}"] for state in TERMINAL_STATES
         ])
  
-        df, _ = _visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig_tf, SIGNIFICANCE_PALETTE)
+        df, _ = rgv.pl._visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig_tf, SIGNIFICANCE_PALETTE)
         df["Factor"] = TF
  
         for state in TERMINAL_STATES:
@@ -237,12 +235,12 @@ def TFscreening(
                             total_simulations,
                             title=f"Density difference {TF}")
  
-        df, palette_rel = _visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE)
-        _plot_visits_dist(df, palette_rel, 0.5)
+        df, palette_rel = rgv.pl._visits_diff_per_tf(adata, TERMINAL_STATES, dd_sig, SIGNIFICANCE_PALETTE)
+        rgv.pl._plot_visits_dist(df, palette_rel, 0.5)
  
     # Plot density likelihood for all factors per terminal state
     else:
-        _plot_visits_dist_combined(
+        rgv.pl._plot_visits_dist_combined(
             df_all,
             TERMINAL_STATES,
             tick_range=0.5,
