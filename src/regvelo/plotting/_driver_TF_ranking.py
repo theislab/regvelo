@@ -91,8 +91,6 @@ def plot_top_TF(
 
     tf_hits = df["TF"]
 
-    sc.pl.matrixplot(adata, tf_hits, groupby=cluster_key, dendrogram=False, swap_axes=True)
-
     # Keep only the strongest increase rate hits
     df = res_sort[res_sort["delta_success_rate"] > threshold]
 
@@ -120,5 +118,3 @@ def plot_top_TF(
         plt.gca().spines["bottom"].set_color("black")
 
     tf_hits = df["TF"]
-
-    sc.pl.matrixplot(adata, tf_hits, groupby=cluster_key, dendrogram=False, swap_axes=True)
