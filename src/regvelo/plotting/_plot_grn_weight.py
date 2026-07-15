@@ -1,11 +1,7 @@
-import os
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-import scanpy as sc
 import scvelo as scv
 import mplscience
 import regvelo as rgv
@@ -65,3 +61,5 @@ def plot_grn_weight(
         scv.pl.umap(adata, color=[TF], frameon=False, title=[TF], ax=axs[row, 0], show=False)
         scv.pl.umap(adata, color=[target], frameon=False, title=[target], ax=axs[row, 1], show=False)
         scv.pl.umap(adata, color=[f"{TF}_{target}_weight"], cmap="Reds", ax=axs[row, 2], show=False)
+        plt.tight_layout()
+        plt.show()
