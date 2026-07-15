@@ -11,7 +11,7 @@ import regvelo as rgv
 
 from ._utils import SIGNIFICANCE_PALETTE
 
-def _visits_diff_per_tf(
+def visits_diff_per_tf(
     adata: AnnData,
     terminal_states: Sequence[str],
     dd_sig: np.ndarray,
