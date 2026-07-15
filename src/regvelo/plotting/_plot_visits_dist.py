@@ -11,7 +11,7 @@ import regvelo as rgv
 
 from ._utils import SIGNIFICANCE_PALETTE
 
-def _plot_visits_dist(
+def plot_visits_dist(
     df: pd.DataFrame,
     palette_rel: list[str],
     tick_range: float,
