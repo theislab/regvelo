@@ -112,7 +112,7 @@ def compute_TF_regulon(
         regulators = np.array(regulators.index.tolist())[np.array(regulators) != 0]
 
         if regulators.size == 0:
-            print("No targets found - recommended to try lower threshold")
+            print("No regulators found - recommended to try lower threshold")
 
         else:
             n_regulators = len(regulators)
