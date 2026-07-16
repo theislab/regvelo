@@ -9,7 +9,7 @@ from ._plot_visits_dist import plot_visits_dist
 from ._plot_visits_dist_screen import plot_visits_dist_screen
 from ._plot_TF_success_rate import plot_TF_success_rate
 from ._plot_grn_weight import plot_grn_weight
-from ._plot_TF_regulon import plot_regulon
+from ._plot_TF_regulon import plot_TF_regulon
 
 __all__ = [
         "commitment_score",
@@ -21,5 +21,5 @@ __all__ = [
         "plot_visits_dist_screen",
         "plot_TF_success_rate",
         "plot_grn_weight",
-        "plot_regulon",
+        "plot_TF_regulon",
         ]
