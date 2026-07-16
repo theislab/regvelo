@@ -36,7 +36,7 @@ def test_markov(tmp_path):
     reg_vae.get_velocity()
     reg_vae.get_latent_time()
 
-    rgv.tl.set_output(adata, vae, n_samples=30, batch_size=adata.n_obs)
+    rgv.tl.set_output(adata, reg_vae, n_samples=30, batch_size=adata.n_obs)
 
     vk = cr.kernels.VelocityKernel(adata).compute_transition_matrix()
     estimator = cr.estimators.GPCCA(vk)
@@ -100,15 +100,14 @@ def test_markov(tmp_path):
     GRN_infer = rgv.tl.inferred_grn(reg_vae, adata, label=cluster_key, group="all", data_frame=True, device="cpu")
 
     assert GRN_prior.index.equals(GRN_infer.index) and GRN_prior.columns.equals(GRN_infer.columns)
-    
     GRN_mixed = GRN_prior * GRN_infer
-    
-    top_hits_targets_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_mixed, "targets", n_hits=10, coef_targets)
-    top_hits_targets_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_infer, "targets", n_hits=10, coef_targets)
 
-    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_targets_infer, device="cpu)
+    top_hits_targets_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_mixed, target_type="targets", n_hits=10, coef_df=coef_targets)
+    top_hits_targets_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_infer, target_type="targets", n_hits=10, coef_df=coef_targets)
 
-    top_hits_regulators_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_mixed, "regulators", n_hits=10, coef_regulators)
-    top_hits_regulators_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_infer, "regulators", n_hits=10, coef_regulators)
-    
-    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_regulators_infer, device="cpu")
+    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], target_list=top_hits_targets_infer, device="cpu")
+
+    top_hits_regulators_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_mixed, target_type="regulators", n_hits=10, coef_df=coef_regulators)
+    top_hits_regulators_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_infer, target_type="regulators", n_hits=10, coef_df=coef_regulators)
+
+    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], target_list=top_hits_regulators_infer, device="cpu")
