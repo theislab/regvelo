@@ -6,7 +6,7 @@ import seaborn as sns
 import mplscience
 import regvelo as rgv
 
-def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits, coef):
+def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits, coef_df):
         """Plot the top ``n_hits`` regulon edges for one terminal state.
 
         Parameters
@@ -23,7 +23,7 @@ def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits, coef):
             table and which GRN orientation to use.
         n_hits : int
             Number of top edges to keep.
-        coef : pandas.DataFrame
+        coef_df : pandas.DataFrame
             Coefficient table containing the regulon scores for the TF,
             with gene pairs as index and terminal states as columns.
 
@@ -33,6 +33,8 @@ def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits, coef):
             The top-hit gene names (targets if ``target_type == "targets"``,
             else regulators).
         """
+
+        coef = coef_df[TF]
         state_coef = coef.sort_values(by=terminal_state_to_plot, ascending=False)[:n_hits][terminal_state_to_plot]
 
         df = pd.DataFrame({"Gene": state_coef.index.tolist(), "Score": np.array(state_coef)})
