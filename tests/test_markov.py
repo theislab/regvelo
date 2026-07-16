@@ -106,9 +106,9 @@ def test_markov(tmp_path):
     top_hits_targets_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_mixed, "targets", n_hits=10, coef_targets)
     top_hits_targets_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_infer, "targets", n_hits=10, coef_targets)
 
-    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_targets_infer, device=device)
+    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_targets_infer, device="cpu)
 
     top_hits_regulators_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_mixed, "regulators", n_hits=10, coef_regulators)
     top_hits_regulators_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_infer, "regulators", n_hits=10, coef_regulators)
     
-    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_regulators_infer, device=device)
+    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_regulators_infer, device="cpu")
