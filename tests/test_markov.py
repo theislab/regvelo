@@ -94,12 +94,16 @@ def test_markov(tmp_path):
     assert coef_targets is not None, "coef_targets is None"
     assert coef_regulators is not None, "coef_regulators is None"
 
-    rgv.pl.plot_GRN_per_TF(adata,
-                    MODEL,
-                    cluster_key=cluster_key,
-                    TF=TF_candidate[0],
-                    TERMINAL_STATES=TERMINAL_STATES,
-                    terminal_state_to_plot=TERMINAL_STATES[0],
-                    coef_targets=coef_targets,
-                    coef_regulators=coef_regulators,
-                    n_hits=10)
+    GRN_prior = adata.uns["skeleton"].copy()
+    GRN_infer = rgv.tl.inferred_grn(reg_vae, adata, label=cluster_key, group="all", data_frame=True, device=device)
+    GRN_mixed = GRN_prior * GRN_infer
+    
+    top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", n_hits, coef_targets)
+    top_hits_targets_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "targets", n_hits, coef_targets)
+
+    plot_grn_weight(adata, vae, TF, top_hits_targets_infer, device=device)
+
+    top_hits_regulators_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "regulators", n_hits, coef_regulators)
+    top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", n_hits, coef_regulators)
+    
+    plot_grn_weight(adata, vae, TF, top_hits_regulators_infer, device=device)
