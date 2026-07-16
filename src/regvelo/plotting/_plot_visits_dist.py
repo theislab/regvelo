@@ -15,6 +15,7 @@ def plot_visits_dist(
     df: pd.DataFrame,
     palette_rel: list[str],
     tick_range: float,
+    figsize: tuple[float, float] | None = None,
 ) -> None:
     """
     Plot a boxplot of visit difference values per terminal state for a single TF.
@@ -27,10 +28,19 @@ def plot_visits_dist(
         Per-group hex colours derived from significance testing.
     tick_range : float
         Half-width of the x-axis range, centred at 0.5.
+    figsize : tuple of float, optional
+        Figure size ``(width, height)`` in inches. If ``None`` (default), the height
+        adapts to the number of terminal states shown (one box per state), clamped to
+        a sensible range; pass a tuple to set it manually.
     """
+    if figsize is None:
+        # One horizontal box per terminal state: scale height with the number of states.
+        n_groups = df["Group"].nunique()
+        figsize = (3, float(np.clip(0.9 * n_groups + 0.6, 2, 12)))
+
     with mplscience.style_context():
         sns.set_style("whitegrid")
-        fig, ax = plt.subplots(figsize=(3, 3))
+        fig, ax = plt.subplots(figsize=figsize)
 
         sns.boxplot(
             data=df,

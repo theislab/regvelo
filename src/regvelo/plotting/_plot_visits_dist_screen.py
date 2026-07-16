@@ -11,11 +11,13 @@ import regvelo as rgv
 from ._utils import SIGNIFICANCE_PALETTE
 
 def plot_visits_dist_screen(
-    df: pd.DataFrame,
+    adata: AnnData,
     terminal_states: Sequence[str],
     candidate_list: list[str],
     tick_range: float,
-    sig_to_keep: list[str],
+    sig_to_keep: list[str] = ["n.s.", "*", "**", "***"],
+    figsize: tuple[float, float] | None = None,
+    key: str = "markov_density_screening",
 ) -> None:
     """
     Plot a combined boxplot of visit differences across all knocked-out TFs,
@@ -23,8 +25,11 @@ def plot_visits_dist_screen(
 
     Parameters
     ----------
-    df : pd.DataFrame
-        Long-form DataFrame with columns 'Value', 'Group', 'Factor', 'significance' retrieved as output from rgv.tl.TFscreening.
+    adata : AnnData
+        AnnData holding the screening results in ``adata.uns[key]``. The long-form
+        table ``adata.uns[key]['screen_perturbation_rate']`` (columns 'Value',
+        'Group', 'Factor', 'significance') is populated by
+        :func:`rgv.tl.markov_density_screening`.
     terminal_states : sequence of str
         Terminal state labels; one plot is produced per state.
     tick_range : float
@@ -32,10 +37,19 @@ def plot_visits_dist_screen(
     candidate_list : list of str
         TFs to include; others are filtered out.
     sig_to_keep : list of str
-        Significance labels to display (e.g. ['*', '**', '***']).
+        Significance labels to display. Defaults to all levels
+        (``['n.s.', '*', '**', '***']``), i.e. every factor is kept.
+    figsize : tuple of float, optional
+        Figure size ``(width, height)`` in inches. If ``None`` (default), the width
+        adapts to the number of factors shown in each panel (one box per factor),
+        clamped to a sensible range; pass a tuple to set it manually.
+    key : str, optional
+        Key in ``adata.uns`` under which the screening results are stored.
+        Default ``"markov_density_screening"``.
     """
     palette = SIGNIFICANCE_PALETTE
 
+    df = adata.uns[key]["screen_perturbation_rate"]
     df = df[df["Factor"].isin(candidate_list)].copy()
     df["Value"] = df["Value"].astype(float)
 
@@ -46,9 +60,16 @@ def plot_visits_dist_screen(
         median_val = df_subset.groupby("Factor")["Value"].median()
         order = median_val.sort_values().index
 
+        if figsize is None:
+            # One box per factor: scale width with the number of factors shown.
+            n_factors = len(order)
+            fig_size = (float(np.clip(0.3 * n_factors, 5, 25)), 5)
+        else:
+            fig_size = figsize
+
         with mplscience.style_context():
             sns.set_style("whitegrid")
-            fig, ax = plt.subplots(figsize=(25, 8))
+            fig, ax = plt.subplots(figsize=fig_size)
 
             sns.boxplot(
                 data=df_subset,
