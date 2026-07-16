@@ -93,9 +93,8 @@ def test_markov(tmp_path):
                            reg_vae, 
                            cluster_key=cluster_key, 
                            TF=TF_candidate[0], 
-                           TERMINAL_STATES=TERMINAL_STATES, 
                            terminal_state_to_plot="Pigment",
-                           coef_targets,
-                           coef_regulators,
+                           coef_targets=coef_targets,          
+                           coef_regulators=coef_regulators,  
                            n_hits=10,
                            device="cpu")
