@@ -36,6 +36,8 @@ def test_markov(tmp_path):
     reg_vae.get_velocity()
     reg_vae.get_latent_time()
 
+    rgv.tl.set_output(adata, vae, n_samples=30, batch_size=adata.n_obs)
+
     vk = cr.kernels.VelocityKernel(adata).compute_transition_matrix()
     estimator = cr.estimators.GPCCA(vk)
     estimator.compute_macrostates(n_states=10, cluster_key=cluster_key)
@@ -95,15 +97,18 @@ def test_markov(tmp_path):
     assert coef_regulators is not None, "coef_regulators is None"
 
     GRN_prior = adata.uns["skeleton"].copy()
-    GRN_infer = rgv.tl.inferred_grn(reg_vae, adata, label=cluster_key, group="all", data_frame=True, device=device)
+    GRN_infer = rgv.tl.inferred_grn(reg_vae, adata, label=cluster_key, group="all", data_frame=True, device="cpu")
+
+    assert GRN_prior.index.equals(GRN_infer.index) and GRN_prior.columns.equals(GRN_infer.columns)
+    
     GRN_mixed = GRN_prior * GRN_infer
     
-    top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", n_hits, coef_targets)
-    top_hits_targets_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "targets", n_hits, coef_targets)
+    top_hits_targets_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_mixed, "targets", n_hits=10, coef_targets)
+    top_hits_targets_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_infer, "targets", n_hits=10, coef_targets)
 
-    plot_grn_weight(adata, vae, TF, top_hits_targets_infer, device=device)
+    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_targets_infer, device=device)
 
-    top_hits_regulators_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "regulators", n_hits, coef_regulators)
-    top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", n_hits, coef_regulators)
+    top_hits_regulators_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_mixed, "regulators", n_hits=10, coef_regulators)
+    top_hits_regulators_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot=["Pigment"], GRN_infer, "regulators", n_hits=10, coef_regulators)
     
-    plot_grn_weight(adata, vae, TF, top_hits_regulators_infer, device=device)
+    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], top_hits_regulators_infer, device=device)
