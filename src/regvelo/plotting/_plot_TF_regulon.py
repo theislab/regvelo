@@ -67,7 +67,7 @@ def plot_grn_weight(
         scv.pl.umap(adata, color=[f"{TF}_{target}_weight"], cmap="Reds", ax=axs[row, 2], show=False)
 
 
-def plot_GRN_per_TF(
+def plot_TF_regulon(
     adata,
     rgv_model,
     cluster_key,
