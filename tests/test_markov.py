@@ -89,18 +89,13 @@ def test_markov(tmp_path):
     assert coef_targets is not None, "coef_targets is None"
     assert coef_regulators is not None, "coef_regulators is None"
 
-    GRN_prior = adata.uns["skeleton"].copy()
-    GRN_infer = rgv.tl.inferred_grn(reg_vae, adata, label=cluster_key, group="all", data_frame=True, device="cpu")
-
-    assert GRN_prior.index.equals(GRN_infer.index) and GRN_prior.columns.equals(GRN_infer.columns)
-    GRN_mixed = GRN_prior * GRN_infer
-
-    top_hits_targets_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_mixed, target_type="targets", n_hits=10, coef_df=coef_targets)
-    top_hits_targets_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_infer, target_type="targets", n_hits=10, coef_df=coef_targets)
-
-    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], target_list=top_hits_targets_infer, device="cpu")
-
-    top_hits_regulators_prior = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_mixed, target_type="regulators", n_hits=10, coef_df=coef_regulators)
-    top_hits_regulators_infer = rgv.pl.plot_regulon(TF=TF_candidate[0], terminal_state_to_plot="Pigment", GRN=GRN_infer, target_type="regulators", n_hits=10, coef_df=coef_regulators)
-
-    rgv.pl.plot_grn_weight(adata, reg_vae, TF=TF_candidate[0], target_list=top_hits_regulators_infer, device="cpu")
+    rgv.pl.plot_TF_regulon(adata, 
+                           reg_vae, 
+                           cluster_key=cluster_key, 
+                           TF=TF_candidate[0], 
+                           TERMINAL_STATES=TERMINAL_STATES, 
+                           terminal_state_to_plot="Pigment",
+                           coef_targets,
+                           coef_regulators,
+                           n_hits=10,
+                           device="cpu")
