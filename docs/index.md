@@ -38,6 +38,7 @@ about/index
 model/index
 api/index
 tutorials/index
+faq
 release_notes/index
 references
 
