@@ -125,8 +125,10 @@ def markov_density_screening(
     For each TF, simulates random walks from :attr:`STARTING_POINTS` to
     :attr:`TERMINAL_STATES` in both the baseline and perturbed transition
     matrices, computes a density difference (dd) score and its significance, then
-    collects per-cell visit statistics. After all TFs are processed, produces
-    summary CSVs and (optionally) a combined significance-annotated boxplot.
+    collects per-cell visit statistics. After all TFs are processed, the result
+    tables are stored in ``adata.uns['markov_density_screening']`` and, when
+    ``save=True``, also written to CSV in ``output_dir``. Per-TF density-difference
+    figures are drawn only when ``plot=True``.
 
     Parameters
     ----------

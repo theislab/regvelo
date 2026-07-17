@@ -32,6 +32,11 @@ def plot_visits_dist(
         Figure size ``(width, height)`` in inches. If ``None`` (default), the height
         adapts to the number of terminal states shown (one box per state), clamped to
         a sensible range; pass a tuple to set it manually.
+
+    Returns
+    -------
+    None
+        The boxplot is drawn; no value is returned.
     """
     if figsize is None:
         # One horizontal box per terminal state: scale height with the number of states.

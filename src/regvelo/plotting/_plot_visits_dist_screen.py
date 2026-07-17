@@ -46,6 +46,11 @@ def plot_visits_dist_screen(
     key : str, optional
         Key in ``adata.uns`` under which the screening results are stored.
         Default ``"markov_density_screening"``.
+
+    Returns
+    -------
+    None
+        One boxplot per terminal state is drawn; no value is returned.
     """
     palette = SIGNIFICANCE_PALETTE
 

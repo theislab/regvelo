@@ -21,40 +21,51 @@ def plot_TF_regulon(
     n_hits=10,
     device="cpu",
 ):
-    """Plot regulon scores, GRN, and weight UMAPs for one TF and terminal states.
+    """Plot a TF's regulon ranking, regulatory network, and cell-resolved weights.
 
-    Builds prior, inferred, and mixed (prior x inferred) GRNs, then for each of
-    the four (GRN x edge-type) combinations draws a plot of the top
-    ``n_hits`` regulatory edges for ``terminal_state`` and the corresponding
-    regulatory-network diagram. Finally calls :func:`plot_grn_weight` for each
-    top-hit set.
+    Loads ``rgv_model``, builds the inferred GRN and the mixed GRN
+    (prior ``adata.uns['skeleton']`` x inferred), and for both edge directions
+    (``targets`` of the TF and ``regulators`` of the TF) draws, for
+    ``terminal_state_to_plot``:
+
+    - a ranking plot of the top ``n_hits`` regulon edges (by coefficient score), and
+    - the corresponding signed regulatory-network diagram, once using the mixed
+      GRN and once using the inferred GRN to sign the edges.
+
+    Finally, it draws per-cell GRN-weight UMAPs (via :func:`plot_grn_weight`) for
+    the inferred-GRN top-hit targets and top-hit regulators.
 
     Parameters
     ----------
     adata : anndata.AnnData
-        AnnData used to train ``rgv_model``; must contain ``uns["skeleton"]``.
+        AnnData used to train ``rgv_model``. Must contain ``uns["skeleton"]``
+        (the prior-GRN adjacency) and a UMAP embedding. Updated in place with the
+        per-cell edge-weight columns added by :func:`plot_grn_weight`.
     rgv_model : str
         Path to a saved, trained RegVelo model directory (as produced by
         ``REGVELOVI.save``). Loaded via ``REGVELOVI.load(rgv_model, adata)``
         and used to infer the GRN.
     cluster_key : str
         ``adata.obs`` column passed to ``rgv.tl.inferred_grn`` (the GRN grouping).
-    TF: list of str
-        List of transcription factor of interest.
+    TF : str
+        The transcription factor of interest. Must be a key of both
+        ``coef_targets`` and ``coef_regulators`` and a gene in ``adata.var_names``.
     terminal_state_to_plot : str
-        The single terminal state to rank edges for. Must match a
-        column name in ``coef_targets``/``coef_regulators``.
+        The single terminal state to rank edges for. Must match a column name in
+        the coefficient tables in ``coef_targets``/``coef_regulators``.
     coef_targets, coef_regulators : dict of str to DataFrame
-        Per-TF target and regulator coefficient tables, as returned by
-        :func:`regvelo.tl.compute_TF_regulon`.
+        Per-TF target and regulator coefficient tables, keyed by TF, as returned
+        by :func:`regvelo.tl.compute_TF_regulon`.
     n_hits : int, optional
-        Number of top edges to show per plot. Default ``10``.
+        Number of top edges to show per ranking plot / network. Default ``10``.
     device : str, optional
-        Device to use for model inference (e.g., "cuda:0" or "cpu"). Default ``"cpu"``.
+        Device used for GRN inference (e.g. ``"cuda:0"`` or ``"cpu"``). Default ``"cpu"``.
 
     Returns
     -------
     None
+        Figures are drawn (ranking plots, network diagrams, and weight UMAPs); no
+        value is returned.
     """
 
     def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits):

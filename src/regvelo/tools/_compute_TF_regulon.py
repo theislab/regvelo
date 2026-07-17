@@ -57,7 +57,8 @@ def compute_TF_regulon(
     ----------
     coef_targets, coef_regulators: dict of str to DataFrame
         Per-TF target and regulator coefficient tables, keyed by TF, to be
-        passed individually into :func:`regvelo.pl.plot_regulon`.
+        passed as the ``coef_targets`` / ``coef_regulators`` arguments of
+        :func:`regvelo.pl.plot_TF_regulon`.
 
     """
     if isinstance(TF, str):
