@@ -1,17 +1,24 @@
+from typing import TYPE_CHECKING, Sequence
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scvelo as scv
 import mplscience
+from anndata import AnnData
 import regvelo as rgv
 
+if TYPE_CHECKING:
+    from regvelo import REGVELOVI
+
 def plot_grn_weight(
-    adata,
-    vae,
-    TF,
-    target_list,
-    device="cpu"):
+    adata: AnnData,
+    vae: "REGVELOVI",
+    TF: str,
+    target_list: Sequence[str],
+    device: str = "cpu",
+) -> None:
 
     """Plot cell-resolved regulatory weights for one TF against several targets.
 

@@ -1,8 +1,8 @@
 # Frequently Asked Questions
 
-## My commitment scores look inverted — stem/progenitor cells score low, differentiated cells score high, and in disease samples nearly all cell types are elevated. Is this a RegVelo bug?
+### Q1: My commitment scores look inverted — stem/progenitor cells score low, differentiated cells score high, and in disease samples nearly all cell types are elevated. Is this a RegVelo bug?
 
-Not necessarily. In most cases this reflects the inferred **velocity field**, not the
+**A:** Not necessarily. In most cases this reflects the inferred **velocity field**, not the
 commitment score itself. CellRank derives commitment probabilities from the velocity
 transition matrix, so a reversed or unreliable velocity field will directly produce
 unexpected commitment scores.
@@ -10,7 +10,7 @@ unexpected commitment scores.
 Before concluding that RegVelo is at fault, validate whether the velocity field is
 reasonable.
 
-### How do I check whether the velocity field is the problem?
+#### How do I check whether the velocity field is the problem?
 
 Run one or more simpler velocity models on the same dataset and compare the velocity
 streams side by side with RegVelo:
@@ -34,7 +34,7 @@ trajectory, RegVelo generally won't either, because the underlying dynamics aren
 identifiable.
 ```
 
-### What could cause this?
+#### What could cause this?
 
 - The dataset is very sparse, making velocity estimation unreliable.
 - Transcriptional dynamics are weak or ambiguous, so RNA velocity can't robustly resolve
@@ -46,7 +46,7 @@ identifiable.
 In these cases the velocity field, and therefore the commitment score, may not match
 prior biological expectations.
 
-### What should I include when reporting this issue?
+#### What should I include when reporting this issue?
 
 - The biological system (in vivo, organoid, cell line, etc.)
 - Velocity stream plots from RegVelo, scVelo (stochastic and/or dynamical), and veloVI if
