@@ -8,19 +8,20 @@ import seaborn as sns
 import scanpy as sc
 import scvelo as scv
 import mplscience
+from anndata import AnnData
 import regvelo as rgv
 
 def plot_TF_regulon(
-    adata,
-    rgv_model,
-    cluster_key,
-    TF,
-    terminal_state_to_plot,
-    coef_targets,
-    coef_regulators,
-    n_hits=10,
-    device="cpu",
-):
+    adata: AnnData,
+    rgv_model: str,
+    cluster_key: str,
+    TF: str,
+    terminal_state_to_plot: str,
+    coef_targets: dict[str, pd.DataFrame],
+    coef_regulators: dict[str, pd.DataFrame],
+    n_hits: int = 10,
+    device: str = "cpu",
+) -> None:
     """Plot a TF's regulon ranking, regulatory network, and cell-resolved weights.
 
     Loads ``rgv_model``, builds the inferred GRN and the mixed GRN
