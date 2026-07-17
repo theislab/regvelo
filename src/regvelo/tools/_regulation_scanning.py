@@ -19,6 +19,8 @@ def regulation_scanning(
     target: list[str],
     effect: float = 1e-3,
     method: Literal["likelihood", "t-statistics"] = "likelihood",
+    n_cells: int = 30,
+    solver: str = "direct",
     **kwargs: Any,
 ) -> dict[str, list[str] | list[pd.Series]]:
     r"""Perform transcription factor (TF) scanning and perturbation analysis on a gene regulatory network.
@@ -43,13 +45,18 @@ def regulation_scanning(
         Value to assign when blocking a regulation (default: ``1e-3``).
     method
         Method to use in :func:`abundance_test` (``"likelihood"`` or ``"t-statistics"``).
+    n_cells
+        Number of cells per macrostate, passed to ``GPCCA.compute_macrostates``.
+    solver
+        Linear solver passed to ``GPCCA.compute_fate_probabilities`` for the original-space fate
+        probabilities.
     **kwargs
         Additional keyboard parameters passed on to :func:`in_silico_block_regulation_simulation`.
 
     Returns
     -------
     Dictionary with keys:
-    
+
     - ``"links"``: formatted regulator -> target strings.
     - ``"coefficient"``: perturbation coefficients.
     - ``"pvalue"``: FDR-adjusted p-values.
@@ -68,14 +75,14 @@ def regulation_scanning(
     g = cr.estimators.GPCCA(0.8 * vk + 0.2 * ck)
 
     # Evaluate the fate prob on original space
-    g.compute_macrostates(n_states=n_states, n_cells=30, cluster_key=cluster_label)
+    g.compute_macrostates(n_states=n_states, n_cells=n_cells, cluster_key=cluster_label)
 
     # Predict cell fate probabilities
     if terminal_states is None:
         g.predict_terminal_states()
         terminal_states = g.terminal_states.cat.categories.tolist()
     g.set_terminal_states(terminal_states)
-    g.compute_fate_probabilities(solver="direct")
+    g.compute_fate_probabilities(solver=solver)
     fate_prob = pd.DataFrame(
         g.fate_probabilities,
         index=adata.obs.index.tolist(),

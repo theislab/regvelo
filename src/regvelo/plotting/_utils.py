@@ -4,6 +4,14 @@ from anndata import AnnData
 
 from sklearn.neighbors import NearestNeighbors
 
+# Significance-level -> colour mapping shared by significance-annotated plots.
+SIGNIFICANCE_PALETTE = {
+    "n.s.": "#dedede",
+    "*": "#90BAAD",
+    "**": "#A1E5AB",
+    "***": "#ADF6B1",
+}
+
 def delta_to_probability(delta_hits: np.ndarray, k: float=1) -> np.ndarray:
     return 1 / (1 + np.exp(-k * delta_hits))
 

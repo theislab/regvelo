@@ -13,6 +13,7 @@ def inferred_grn(
     group: str | list[str] = None,
     cell_specific_grn: bool = False,
     data_frame: bool = False,
+    device: str | torch.device = "cuda:0",
 ) -> np.ndarray | pd.DataFrame:
     r"""Infer the gene regulatory network (GRN) using a trained RegVelo VAE model.
 
@@ -30,18 +31,37 @@ def inferred_grn(
         - ``"all"`` or ``None``: use all cells.
         - list of str: subset to these groups from ``adata.obs[label]``.
     cell_specific_grn
-        If ``True``, compute a cell-specific GRN using individual cell data. 
+        If ``True``, compute a cell-specific GRN using individual cell data.
     data_frame
         If ``True`` and ``cell_specific_grn`` is ``False``, return the GRN as a :class:`pandas.DataFrame`.
+    device
+        Device to run GRN inference on, e.g. ``"cuda:0"`` or ``"cpu"``. The VAE module is moved
+        to this device before inference. Defaults to ``"cuda:0"``. If the specified device is
+        unavailable, will gracefully fall back to CPU.
 
     Returns
     -------
     numpy.ndarray or pandas.DataFrame
         The inferred GRN as an array or DataFrame. For cell-specific GRN, always returns an array.
     """
-    
+
     if "Ms" not in adata.layers:
         raise KeyError("Layer 'Ms' not found in adata.layers.")
+
+    # Validate and normalize device specification
+    try:
+        # Try to move model to the specified device
+        vae.module.to(device)
+    except RuntimeError as e:
+        # If device is unavailable, gracefully fall back to CPU
+        import warnings
+        warnings.warn(
+            f"Device '{device}' is unavailable or invalid ({e}). "
+            f"Falling back to CPU for inference.",
+            UserWarning
+        )
+        device = "cpu"
+        vae.module.to(device)
 
     if cell_specific_grn is not True:
         # Retrieve unique cell types or groups from the specified label
@@ -58,14 +78,14 @@ def inferred_grn(
 
         # Compute the GRN using the VAE's encoder and global mean gene expression
         GRN = (
-            vae.module.v_encoder.GRN_Jacobian(torch.tensor(adata.layers["Ms"].mean(0)).to("cuda:0"))
+            vae.module.v_encoder.GRN_Jacobian(torch.tensor(adata.layers["Ms"].mean(0)).to(device))
             .detach()
             .cpu()
             .numpy()
         )
     else:
         # Compute the cell-specific GRN using the VAE's encoder for each cell
-        GRN = vae.module.v_encoder.GRN_Jacobian2(torch.tensor(adata.layers["Ms"]).to("cuda:0")).detach().cpu().numpy()
+        GRN = vae.module.v_encoder.GRN_Jacobian2(torch.tensor(adata.layers["Ms"]).to(device)).detach().cpu().numpy()
 
     # Normalize GRN by the mean absolute non-zero values
     GRN = GRN / np.mean(np.abs(GRN)[GRN != 0])
