@@ -5,9 +5,7 @@
 **RegVelo** is an end-to-end framework to infer regulatory cellular dynamics through coupled splicing dynamics. 
 See our [RegVelo manuscript](https://www.cell.com/cell/fulltext/S0092-8674(26)00457-5) and [documentation](https://regvelo.readthedocs.io/en/latest/index.html) to learn more. 
 
-Before opening an issue, it may be worth checking the [FAQ](https://regvelo.readthedocs.io/en/latest/faq.html), which covers some commonly encountered questions and unexpected behaviors.
-
-Feel free to open an [issue](https://github.com/theislab/regvelo/issues/new) if you encounter a bug, need help, have a suggestion, or notice any cases where regvelo doesn't work as expected. Reports of unexpected behavior or edge cases are especially valuable and help us continue improving the package! You are also welcome to contact the lead developer directly: weixu.wang@helmholtz-munich.de
+Feel free to open an [issue](https://github.com/theislab/regvelo/issues/new) if you encounter a bug, need help, have a suggestion, or notice any cases where regvelo doesn't work as expected. **Reports of unexpected behavior or edge cases are especially valuable and help us continue improving the package!** We also maintain an [FAQ](https://regvelo.readthedocs.io/en/latest/faq.html) that addresses some commonly encountered questions and unexpected behaviors. You are also welcome to contact the lead developer directly: weixu.wang@helmholtz-munich.de
 
 RegVelo's key applications
 --------------------------
