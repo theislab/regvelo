@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-### Q1: My commitment scores look inverted — stem/progenitor cells score low, differentiated cells score high, and in disease samples nearly all cell types are elevated. Is this a RegVelo bug?
+#### Q1: My commitment scores look inverted — stem/progenitor cells score low, differentiated cells score high, and in disease samples nearly all cell types are elevated. Is this a RegVelo bug?
 
 **A:** Not necessarily. In most cases this reflects the inferred **velocity field**, not the
 commitment score itself. CellRank derives commitment probabilities from the velocity
