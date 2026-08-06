@@ -6,7 +6,7 @@ from anndata import AnnData
 from ..metrics._utils import get_significance
 from ..plotting._utils import SIGNIFICANCE_PALETTE
 
-def visits_diff_per_tf(
+def _visits_diff_per_tf(
     adata: AnnData,
     terminal_states: Sequence[str],
     dd_sig: np.ndarray,
