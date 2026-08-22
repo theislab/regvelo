@@ -49,5 +49,5 @@ By combining RegVelo’s generative model with CellRank, we connect gene regulat
 In the context of our perturbation analyses, we compare CellRank’s prediction of cell fate probabilities for the original and perturbed vector fields, 
 to find enrichment (increased cell fate probability) or depletion (decreased cell fate probability) effects towards terminal states.
 
-See `Wang et al. (biorxiv, 2024) <https://www.biorxiv.org/content/10.1101/2024.12.11.627935v1>`_ for a detailed description of the methods and applications on different biological systems.
+See `Wang et al. (Cell, 2026) <https://www.cell.com/cell/fulltext/S0092-8674(26)00457-5>`_ for a detailed description of the methods and applications on different biological systems.
 
