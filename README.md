@@ -20,6 +20,17 @@ RegVelo's key applications
 We have [tutorials](https://regvelo.readthedocs.io/en/latest/getting_started.html) to help you get started.
 
 
+## Resources
+
+RegVelo ships with several published datasets via `regvelo.datasets`, so you can try the pipeline without bringing your own data:
+
+- **Zebrafish neural crest (Smart-seq3)** — `rgv.datasets.zebrafish_nc()` loads Smart-seq3 profiles across seven time points of neural crest development, paired with a prior GRN via `rgv.datasets.zebrafish_grn()`.
+- **Zebrafish neural crest (Perturb-seq)** — `rgv.datasets.zebrafish_perturb()` loads a single-cell CRISPR screening dataset (12,393 cells) with TF knockouts, useful for benchmarking *in silico* perturbation predictions against ground truth.
+- **Human embryonic hindbrain** — `rgv.datasets.hindbrain()` loads single-cell RNA-seq data from the developing human hindbrain, paired with a prior GRN via `rgv.datasets.hindbrain_grn()`.
+
+See the [datasets API reference](https://regvelo.readthedocs.io/en/latest/api/datasets.html) for the full list, including the murine neural crest, human limb, and Schwann cell datasets.
+
+
 ## Installation
 
 You need to have Python 3.10 or newer installed on your system.
