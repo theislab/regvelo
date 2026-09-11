@@ -17,6 +17,7 @@ def plot_TF_regulon(
     cluster_key: str,
     TF: str,
     terminal_state_to_plot: str,
+    GRN_to_use: str,
     coef_targets: dict[str, pd.DataFrame],
     coef_regulators: dict[str, pd.DataFrame],
     n_hits: int = 10,
@@ -48,12 +49,16 @@ def plot_TF_regulon(
         and used to infer the GRN.
     cluster_key : str
         ``adata.obs`` column passed to ``rgv.tl.inferred_grn`` (the GRN grouping).
-    TF : str
+    TF : str 
+        Candidate transcription factor(s) to scan.
         The transcription factor of interest. Must be a key of both
         ``coef_targets`` and ``coef_regulators`` and a gene in ``adata.var_names``.
     terminal_state_to_plot : str
         The single terminal state to rank edges for. Must match a column name in
         the coefficient tables in ``coef_targets``/``coef_regulators``.
+    GRN_to_use : str
+        Set which GRN connection to use in the visualization. Accepted options are 
+        ``prior``, ``inferred``, ``both``.
     coef_targets, coef_regulators : dict of str to DataFrame
         Per-TF target and regulator coefficient tables, keyed by TF, as returned
         by :func:`regvelo.tl.compute_TF_regulon`.
@@ -69,7 +74,7 @@ def plot_TF_regulon(
         value is returned.
     """
 
-    def plot_regulon(TF, terminal_state_to_plot, GRN, target_type, n_hits):
+    def plot_regulon(TF, terminal_state_to_plot, GRN_to_use, GRN, target_type, n_hits):
         """Plot the top ``n_hits`` regulon edges for one terminal state.
 
         Parameters
@@ -78,6 +83,9 @@ def plot_TF_regulon(
             Transcription factor whose regulon is plotted.
         terminal_state_to_plot : str
             Terminal-state column to rank edges by (descending score).
+        GRN_to_use : str
+            GRN connection to use in the visualization. Accepted options are 
+            ``prior``, ``inferred``, ``both``.
         GRN : pandas.DataFrame
             Gene-by-gene GRN (prior, inferred, or mixed) used to sign the edges in
             the network diagram.
@@ -115,7 +123,7 @@ def plot_TF_regulon(
 
             plt.xlabel("Depletion likelihood")
             plt.ylabel("")
-            plt.title(f"{terminal_state_to_plot}")
+            plt.title(f"{terminal_state_to_plot} {GRN_to_use}")
 
             plt.gca().spines["top"].set_visible(False)
             plt.gca().spines["right"].set_visible(False)
@@ -142,20 +150,24 @@ def plot_TF_regulon(
 
         return top_hits
 
+    valid = {"prior", "inferred", "both"}
+    if GRN_to_use not in valid:
+        raise ValueError(f"GRN_to_use must be one of {sorted(valid)}, got {GRN_to_use!r}")
+
     vae = rgv.REGVELOVI.load(rgv_model, adata)
-    
+
     GRN_prior = adata.uns["skeleton"].copy()
     GRN_infer = rgv.tl.inferred_grn(vae, adata, label=cluster_key, group="all", data_frame=True, device=device)
     GRN_mixed = GRN_prior * GRN_infer
-    
-    top_hits_targets_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "targets", n_hits)
 
-    top_hits_targets_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "targets", n_hits)
+    plans = []
+    if GRN_to_use in ("prior", "both"):
+        plans.append(("prior", GRN_mixed))    
+    if GRN_to_use in ("inferred", "both"):
+        plans.append(("inferred", GRN_infer))
 
-    top_hits_regulators_prior = plot_regulon(TF, terminal_state_to_plot, GRN_mixed, "regulators", n_hits)
-
-    top_hits_regulators_infer = plot_regulon(TF, terminal_state_to_plot, GRN_infer, "regulators", n_hits)
-    
-    rgv.pl.plot_grn_weight(adata, vae, TF, top_hits_targets_infer, device=device)
-
-    rgv.pl.plot_grn_weight(adata, vae, TF, top_hits_regulators_infer, device=device)
+    for label, grn in plans:
+        top_targets   = plot_regulon(TF, terminal_state_to_plot, label, grn, "targets", n_hits)
+        top_regulators = plot_regulon(TF, terminal_state_to_plot, label, grn, "regulators", n_hits)
+        rgv.pl.plot_grn_weight(adata, vae, TF, top_targets, device=device)
+        rgv.pl.plot_grn_weight(adata, vae, TF, top_regulators, device=device)

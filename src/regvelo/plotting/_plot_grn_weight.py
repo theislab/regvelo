@@ -52,21 +52,27 @@ def plot_grn_weight(
     figsize = 6
     wspace = 0.05
 
-    fig, axs = plt.subplots(
-        nrows=nrows,
-        ncols=ncols,
-        figsize=(ncols * figsize + figsize * wspace * (ncols - 1), nrows * figsize),
-    )
-    plt.subplots_adjust(wspace=wspace)    
+    with mplscience.style_context():
+        fig, axs = plt.subplots(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=(ncols * figsize + figsize * wspace * (ncols - 1), nrows * figsize),
+        )
+        plt.subplots_adjust(wspace=wspace)    
+    
+        for row, target in enumerate(target_list):
+            regulon = GRN[
+                :, [i == target for i in adata.var.index], [i == TF for i in adata.var.index]
+            ].reshape(-1)
+            adata.obs[f"{TF}_{target}_weight"] = regulon
 
-    for row, target in enumerate(target_list):
-        regulon = GRN[
-            :, [i == target for i in adata.var.index], [i == TF for i in adata.var.index]
-        ].reshape(-1)
-        adata.obs[f"{TF}_{target}_weight"] = regulon
-
-        scv.pl.umap(adata, color=[TF], frameon=False, title=[TF], ax=axs[row, 0], show=False)
-        scv.pl.umap(adata, color=[target], frameon=False, title=[target], ax=axs[row, 1], show=False)
-        scv.pl.umap(adata, color=[f"{TF}_{target}_weight"], cmap="Reds", ax=axs[row, 2], show=False)
-        plt.tight_layout()
-        plt.show()
+            if nrows == 1:
+                scv.pl.umap(adata, color=[TF], frameon=False, title=[TF], ax=axs[0], show=False)
+                scv.pl.umap(adata, color=[target], frameon=False, title=[target], ax=axs[1], show=False)
+                scv.pl.umap(adata, color=[f"{TF}_{target}_weight"], cmap="Reds", ax=axs[2], show=False)
+            else:
+                scv.pl.umap(adata, color=[TF], frameon=False, title=[TF], ax=axs[row, 0], show=False)
+                scv.pl.umap(adata, color=[target], frameon=False, title=[target], ax=axs[row, 1], show=False)
+                scv.pl.umap(adata, color=[f"{TF}_{target}_weight"], cmap="Reds", ax=axs[row, 2], show=False)
+        fig.tight_layout()
+    plt.show()

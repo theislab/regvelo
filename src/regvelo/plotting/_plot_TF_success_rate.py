@@ -121,7 +121,7 @@ def plot_TF_success_rate(
 
         for _, row in df_increase.iterrows():
             plt.hlines(
-                row["TF"], xmin=row["delta_success_rate"], xmax=0,
+                row["TF"], xmin=0, xmax=row["delta_success_rate"],
                 colors="grey", linestyles="-", alpha=0.5,
             )
 
