@@ -1,0 +1,25 @@
+name: ❓ Usage question
+description: Ask how to use regvelo, interpret results, or apply it to your data
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before asking, you may find an answer in the [documentation](https://regvelo.readthedocs.io) and [tutorials](https://regvelo.readthedocs.io/en/latest/tutorials/index.html).
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: About your data
+      description: e.g. tissue/system, number of cells and genes, sequencing technology, how the GRN prior was obtained.
+  - type: textarea
+    id: code
+    attributes:
+      label: What you have tried
+      render: python

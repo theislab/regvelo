@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Documentation
+    url: https://regvelo.readthedocs.io
+    about: Tutorials and API reference
+  - name: ✉️ Contact the lead developer
+    url: mailto:weixu.wang@helmholtz-munich.de
+    about: For questions you prefer not to post publicly

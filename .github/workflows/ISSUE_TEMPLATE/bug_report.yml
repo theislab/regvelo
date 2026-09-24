@@ -1,0 +1,45 @@
+name: 🐛 Bug report
+description: Report an error or unexpected behavior in regvelo
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem! Clear reports help us fix things faster.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal code to reproduce
+      description: The smallest code snippet that triggers the problem. If possible, use a public dataset or a small subset of your data.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Error message / traceback
+      description: Paste the full error output, if any.
+      render: shell
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: |
+        Please run the following and paste the output:
+        `python -c "import regvelo, scvi, torch, scanpy; print('regvelo', regvelo.__version__); print('scvi-tools', scvi.__version__); print('torch', torch.__version__); print('scanpy', scanpy.__version__)"`
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and hardware
+      placeholder: e.g. Ubuntu 22.04, CUDA 12.1 / macOS 14 (CPU)

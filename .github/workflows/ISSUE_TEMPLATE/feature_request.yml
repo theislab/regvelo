@@ -1,0 +1,22 @@
+name: 💡 Feature request
+description: Suggest a new feature or an improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe the analysis or use case you have in mind and what is currently missing or hard.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: If you have an idea of how it could work (API, function, parameter), describe it here.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Related papers, tools, or examples.
