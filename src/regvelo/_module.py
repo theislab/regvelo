@@ -180,7 +180,7 @@ class velocity_encoder(nn.Module):
         A Jacobian-like matrix capturing sensitivity of the transcription rate to each input gene.
         """
         
-        if self.activate is not "OR":
+        if self.activate != "OR":
             if self.base_alpha is not True:
                 grn = self.fc1.weight
                 #grn = grn - self.lamb_I
@@ -247,7 +247,7 @@ class velocity_encoder(nn.Module):
         -------
         Transcription rate tensor of shape ``(batch_size, n_int)``.
         """
-        if self.activate is not "OR":
+        if self.activate != "OR":
             if self.base_alpha is not True:
                 grn = self.fc1.weight
                 #grn = grn - self.lamb_I
@@ -261,7 +261,7 @@ class velocity_encoder(nn.Module):
                 alpha = torch.sigmoid(alpha_unconstr)*self.alpha_unconstr_max
             else:
                 raise NotImplementedError
-        elif self.activate is "OR":
+        elif self.activate == "OR":
             alpha = torch.exp(self.fc1(torch.log(torch.nn.functional.softsign(s - 0.5)+1)))
             
         return alpha
@@ -292,7 +292,7 @@ class velocity_encoder(nn.Module):
         ## x is a matrix with (G*2), in which row is a subgraph (batch)
         beta = torch.clamp(F.softplus(self.beta_mean_unconstr), 0, 50)
         gamma = torch.clamp(F.softplus(self.gamma_mean_unconstr), 0, 50)
-        if self.activate is not "OR":
+        if self.activate != "OR":
             if self.base_alpha is not True:
                 grn = self.fc1.weight
                 alpha_unconstr = torch.matmul(s,grn.T)
@@ -303,7 +303,7 @@ class velocity_encoder(nn.Module):
                 alpha = torch.clamp(F.softplus(alpha_unconstr),0,50)
             elif self.activate == "sigmoid":
                 alpha = torch.sigmoid(alpha_unconstr)*self.alpha_unconstr_max
-        elif self.activate is "OR":
+        elif self.activate == "OR":
             alpha = torch.exp(self.fc1(torch.log(torch.nn.functional.softsign(s - 0.5)+1)))
         else:
             raise NotImplementedError
