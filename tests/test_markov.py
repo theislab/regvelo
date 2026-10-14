@@ -7,13 +7,8 @@ import cellrank as cr
 from scvi.data import synthetic_iid
 import regvelo as rgv
 from regvelo import REGVELOVI
-
-from .src.tools._markov_density_screening import markov_density_screening
-from .src.tools._compute_TF_regulon import compute_TF_regulon
-
-from .src.plotting._plot_TF_regulon import plot_TF_regulon
-from .src.plotting._plot_TF_success_rate import plot_TF_success_rate
-from .src.plotting._plot_visits_dist_screen import plot_visits_dist_screen
+from regvelo.plotting import plot_TF_regulon, plot_TF_success_rate, plot_visits_dist_screen
+from regvelo.tools import compute_TF_regulon, markov_density_screening
 
 # Common variables used in the test
 cluster_key = "cell_type"
