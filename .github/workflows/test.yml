@@ -35,7 +35,7 @@ jobs:
                   pip install .[dev]
             - name: Test with pytest
               run: |
-                  pytest --cov-report=xml --cov=velovi
+                  pytest --cov-report=xml --cov=regvelo
             - name: After success
               run: |
                   bash <(curl -s https://codecov.io/bash)

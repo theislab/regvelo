@@ -753,7 +753,7 @@ class REGVELOVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
 
         This method extracts per-gene parameters from the trained decoder:
 
-        - beta (transcription rate)
+        - beta (splicing rate)
         - gamma (degradation rate)
         - alpha_1 (initial transcriptional activation)
 
