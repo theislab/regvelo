@@ -124,7 +124,7 @@ def murine_nc(data_type: Literal["preprocessed", "normalized", "velocyto"] = "pr
 
     return adata
 
-def murine_nc_grn(file_path: str | Path = "data/murine_nc/prior_GRN.parquet") -> pd.DataFrame:
+def murine_nc_grn(file_path: str | Path = "data/murine_nc/murine_nc_grn.parquet") -> pd.DataFrame:
     r"""Load prior gene regulatory network (GRN) for murine neural crest.
 
     Parameters
@@ -137,7 +137,7 @@ def murine_nc_grn(file_path: str | Path = "data/murine_nc/prior_GRN.parquet") ->
     DataFrame representing the GRN.
     """
     grn = pd.read_parquet(url_murine_nc_grn)
-    grn.to_csv(file_path)
+    grn.to_parquet(file_path)
     return grn
 
 def human_limb(file_path: str | Path = "data/humanlimb/adata_humanlimb_preprocessed.h5ad") -> AnnData:
