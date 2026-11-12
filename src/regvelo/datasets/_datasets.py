@@ -13,7 +13,7 @@ url_perturb = "https://drive.usercontent.google.com/download?id=1CKADDykadX0CLjY
 url_adata_murine_processed = "https://drive.usercontent.google.com/download?id=19bNQfW3jMKEEjpjNdUkVd7KDTjJfqxa5&export=download&authuser=1&confirm=t&uuid=4fdf3051-229b-4ce2-b644-cb390424570a&at=APcmpoxgcuZ5r6m6Fb6N_2Og6tEO:1745354679573"
 url_adata_murine_normalized = "https://drive.usercontent.google.com/download?id=1xy2FNYi6Y2o_DzXjRmmCtARjoZ97Ro_w&export=download&authuser=1&confirm=t&uuid=12cf5d23-f549-48d9-b7ec-95411a58589f&at=APcmpoyexgouf243lNygF9yRUkmi:1745997349046"
 url_adata_murine_velocyto = "https://drive.usercontent.google.com/download?id=18Bhtb7ruoUxpNt8WMYSaJ1RyoiHOCEjd&export=download&authuser=1&confirm=t&uuid=ecc42202-bc82-4ab1-b2c3-bfc31c99f0df&at=APcmpozsh6tBzkv8NSIZW0VipDJa:1745997422108"
-url_murine_nc_grn = ""
+url_murine_nc_grn = "https://drive.google.com/uc?export=download&id=1SGqKVKMxtIep6o1PJUHDJbyxONcWQQIP"
 
 url_adata_humanlimb = "https://drive.usercontent.google.com/download?id=17ZaqWx91w--iTtwWMR-SCh6wZO3bzMtM&export=download&authuser=0&confirm=t&uuid=7bdbe7b7-380d-4075-bbe2-1bb65fc0b0a2&at=AN8xHoor6c_hR8_eEd7EENc6dV9M:1750766911809"
 
