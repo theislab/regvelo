@@ -13,6 +13,7 @@ url_perturb = "https://drive.usercontent.google.com/download?id=1CKADDykadX0CLjY
 url_adata_murine_processed = "https://drive.usercontent.google.com/download?id=19bNQfW3jMKEEjpjNdUkVd7KDTjJfqxa5&export=download&authuser=1&confirm=t&uuid=4fdf3051-229b-4ce2-b644-cb390424570a&at=APcmpoxgcuZ5r6m6Fb6N_2Og6tEO:1745354679573"
 url_adata_murine_normalized = "https://drive.usercontent.google.com/download?id=1xy2FNYi6Y2o_DzXjRmmCtARjoZ97Ro_w&export=download&authuser=1&confirm=t&uuid=12cf5d23-f549-48d9-b7ec-95411a58589f&at=APcmpoyexgouf243lNygF9yRUkmi:1745997349046"
 url_adata_murine_velocyto = "https://drive.usercontent.google.com/download?id=18Bhtb7ruoUxpNt8WMYSaJ1RyoiHOCEjd&export=download&authuser=1&confirm=t&uuid=ecc42202-bc82-4ab1-b2c3-bfc31c99f0df&at=APcmpozsh6tBzkv8NSIZW0VipDJa:1745997422108"
+url_murine_nc_grn = ""
 
 url_adata_humanlimb = "https://drive.usercontent.google.com/download?id=17ZaqWx91w--iTtwWMR-SCh6wZO3bzMtM&export=download&authuser=0&confirm=t&uuid=7bdbe7b7-380d-4075-bbe2-1bb65fc0b0a2&at=AN8xHoor6c_hR8_eEd7EENc6dV9M:1750766911809"
 
@@ -21,8 +22,6 @@ url_adata_hindbrain = "https://drive.usercontent.google.com/download?id=1g0TE-Fx
 url_adata_hindbrain_processed = "https://drive.usercontent.google.com/download?id=1F2A3kUcHmYJR3v61u6Py3Bmo2Zxl4eUC&export=download&authuser=1&confirm=t&uuid=577ac34b-4fb7-49b9-91e9-9868a9e0f9e4&at=AN8xHorPStlDZePwNziyUuAJmZSQ:1754605238549"
 
 url_adata_schwann = "https://drive.usercontent.google.com/download?id=1ZpG1gz0jjPNuXc_bsz3XInVtHooHU02M&export=download&authuser=1&confirm=t&uuid=eeed9d4b-c938-40c9-af24-b248fd29e161&at=AN8xHoqO3RF2oroUCmn7jFURR16T:1754642525195"
-
-
 
 
 def zebrafish_nc(file_path: str | Path = "data/zebrafish_nc/adata_zebrafish_preprocessed.h5ad") -> AnnData:
@@ -124,6 +123,22 @@ def murine_nc(data_type: Literal["preprocessed", "normalized", "velocyto"] = "pr
         adata = read(file_path[2], backup_url=url_adata_murine_velocyto, sparse=True, cache=True)
 
     return adata
+
+def murine_nc_grn(file_path: str | Path = "data/murine_nc/prior_GRN.parquet") -> pd.DataFrame:
+    r"""Load prior gene regulatory network (GRN) for murine neural crest.
+
+    Parameters
+    ---------
+    file_path
+        Path to save the GRN dataset locally and to read it from.
+
+    Returns
+    -------
+    DataFrame representing the GRN.
+    """
+    grn = pd.read_parquet(url_murine_nc_grn)
+    grn.to_csv(file_path)
+    return grn
 
 def human_limb(file_path: str | Path = "data/humanlimb/adata_humanlimb_preprocessed.h5ad") -> AnnData:
     """Load human limb single-cell RNA-seq dataset.
