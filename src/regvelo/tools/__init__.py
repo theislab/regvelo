@@ -12,6 +12,7 @@ from ._regulation_scanning import regulation_scanning
 from ._in_silico_block_regulation_simulation import in_silico_block_regulation_simulation
 from ._inferred_grn import inferred_grn
 from ._compute_TF_regulon import compute_TF_regulon
+from ._visits_diff_per_tf import visits_diff_per_tf
 
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
         "in_silico_block_regulation_simulation",
         "inferred_grn",
         "compute_TF_regulon",
+        "visits_diff_per_tf",
         ]
